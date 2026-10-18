@@ -32,12 +32,31 @@ export async function POST(req: NextRequest) {
 
     if (event === "charge.success" && data) {
       const reference = data.reference;
-      const metadata = data.metadata || {};
-      const userId = metadata.user_id;
-      const planName = metadata.plan_name || "Seller Subscription";
+
+      let metadata: Record<string, unknown> = {};
+      if (typeof data.metadata === "string") {
+        try {
+          metadata = JSON.parse(data.metadata) as Record<string, unknown>;
+        } catch {
+          metadata = {};
+        }
+      } else if (data.metadata && typeof data.metadata === "object") {
+        metadata = data.metadata as Record<string, unknown>;
+      }
+
+      let customFieldUserId: string | undefined;
+      let customFieldPlanName: string | undefined;
+      const customFields = metadata.custom_fields;
+      if (Array.isArray(customFields)) {
+        customFieldUserId = (customFields.find((f: { variable_name?: string }) => f?.variable_name === "seller_id") as { value?: string } | undefined)?.value;
+        customFieldPlanName = (customFields.find((f: { variable_name?: string }) => f?.variable_name === "plan_name") as { value?: string } | undefined)?.value;
+      }
+
+      const userId = (metadata.user_id as string | undefined) || customFieldUserId;
+      const planName = (metadata.plan_name as string | undefined) || customFieldPlanName || "Seller Subscription";
       const durationDays = Number(metadata.duration_days) || 30;
       const amountGhs = Number(metadata.amount_ghs) || Math.round(data.amount / 100);
-      const sellerName = metadata.seller_name || "Seller";
+      const sellerName = (metadata.seller_name as string | undefined) || "Seller";
       const customerEmail = data.customer?.email || "";
       const paymentMethod = `Paystack ${data.channel ? data.channel.toUpperCase() : "Mobile Money"}`;
 

@@ -202,10 +202,17 @@ begin
     raise exception 'User ID must be provided';
   end if;
 
-  -- Prevent duplicate activation if reference was already recorded
+  -- Prevent duplicate activation if reference was already recorded, but ensure profile is active
   if exists (select 1 from public.subscription_payments where reference = p_reference and status = 'success') then
     select subscription_expires_at into v_new_expiry from public.profiles where id = p_user_id;
-    return json_build_object('success', true, 'new_expiry', v_new_expiry, 'message', 'Already processed');
+    update public.profiles
+    set
+      role = 'seller'::public.account_role,
+      subscription_status = 'active',
+      subscription_tier = coalesce(p_plan_name, subscription_tier),
+      subscription_expires_at = coalesce(v_new_expiry, now() + (p_duration_days || ' days')::interval)
+    where id = p_user_id;
+    return json_build_object('success', true, 'new_expiry', coalesce(v_new_expiry, now() + (p_duration_days || ' days')::interval), 'message', 'Already processed');
   end if;
 
   -- Fetch current expiry timestamp

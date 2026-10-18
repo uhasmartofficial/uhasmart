@@ -157,21 +157,60 @@ export default function SubscriptionModal({
                 const verifyRes = await fetch("/api/payment/paystack/verify", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ reference: response.reference }),
+                  body: JSON.stringify({
+                    reference: response.reference,
+                    userId,
+                    planId: selectedPlan.id,
+                    sellerName: sellerName || "Seller",
+                    userEmail: userEmail || "seller@uhasmart.com",
+                  }),
                 });
                 const verifyData = await verifyRes.json();
 
                 if (verifyData.success) {
+                  const newExpiry =
+                    verifyData.newExpiry ||
+                    new Date(Date.now() + selectedPlan.durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+                  // Direct client-side sync using active authenticated user session
+                  if (supabase && userId) {
+                    try {
+                      await Promise.allSettled([
+                        supabase
+                          .from("profiles")
+                          .update({
+                            role: "seller",
+                            subscription_status: "active",
+                            subscription_tier: selectedPlan.name,
+                            subscription_expires_at: newExpiry,
+                            subscription_reminder_sent: false,
+                          })
+                          .eq("id", userId),
+                        supabase.from("subscription_payments").insert({
+                          seller_id: userId,
+                          amount_ghs: selectedPlan.priceGhs,
+                          plan_name: selectedPlan.name,
+                          duration_days: selectedPlan.durationDays,
+                          payment_method: "paystack",
+                          momo_number: defaultPhone || "Paystack",
+                          momo_network: "paystack",
+                          reference: response.reference,
+                          status: "success",
+                        }),
+                      ]);
+                    } catch (syncErr) {
+                      console.warn("Client subscription sync notice:", syncErr);
+                    }
+                  }
+
                   setPaymentStep("success");
-                  const formatted = verifyData.newExpiry
-                    ? new Date(verifyData.newExpiry).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })
-                    : `${selectedPlan.durationDays} days`;
+                  const formatted = new Date(newExpiry).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  });
                   setSuccessDate(formatted);
-                  onSuccess(verifyData.newExpiry || "");
+                  onSuccess(newExpiry);
                 } else {
                   setErrorMessage(verifyData.error || "Payment verification failed. Please try again.");
                   setPaymentStep("select");

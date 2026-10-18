@@ -60,6 +60,7 @@ interface ProfileState {
   phone_number?: string | null;
   campus_location?: string | null;
   subscription_status?: string | null;
+  subscription_tier?: string | null;
   subscription_expires_at?: string | null;
   trial_ends_at?: string | null;
   created_at?: string;
@@ -122,7 +123,7 @@ export default function SellerDashboard() {
 
       setUser(authData.user);
 
-      const [profRes, listRes] = await Promise.all([
+      const [profRes, listRes, payRes] = await Promise.all([
         supabase
           .from("profiles")
           .select("display_name,role,business_name,phone_number,campus_location,subscription_status,subscription_expires_at,trial_ends_at,created_at")
@@ -133,6 +134,14 @@ export default function SellerDashboard() {
           .select("*")
           .eq("seller_id", authData.user.id)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("subscription_payments")
+          .select("amount_ghs,plan_name,duration_days,created_at,reference")
+          .eq("seller_id", authData.user.id)
+          .eq("status", "success")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       const metaRole = authData.user.user_metadata?.role;
@@ -142,6 +151,30 @@ export default function SellerDashboard() {
 
       if (profRes.data) {
         const prof = profRes.data as ProfileState;
+
+        // Auto-heal active subscription if user has a verified payment in subscription_payments
+        if (payRes.data && payRes.data.created_at) {
+          const durationDays = payRes.data.duration_days || 30;
+          const payTime = new Date(payRes.data.created_at).getTime();
+          const computedExpiry = new Date(payTime + durationDays * 24 * 60 * 60 * 1000);
+
+          if (computedExpiry.getTime() > Date.now() && prof.subscription_status !== "active") {
+            prof.subscription_status = "active";
+            prof.subscription_tier = payRes.data.plan_name || "Seller Subscription";
+            prof.subscription_expires_at = computedExpiry.toISOString();
+
+            void supabase
+              .from("profiles")
+              .update({
+                role: "seller",
+                subscription_status: "active",
+                subscription_tier: payRes.data.plan_name || "Seller Subscription",
+                subscription_expires_at: computedExpiry.toISOString(),
+                subscription_reminder_sent: false,
+              })
+              .eq("id", authData.user.id);
+          }
+        }
         // If metadata indicates seller but profile table hasn't updated yet, sync and self-heal
         if (metaRole === "seller" && prof.role !== "seller") {
           prof.role = "seller";

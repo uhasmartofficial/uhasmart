@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPaystackTransaction } from "@/lib/paystack";
 import { createClient } from "@supabase/supabase-js";
 import { sendSubscriptionPaymentConfirmation } from "@/lib/email";
+import { SUBSCRIPTION_PLANS } from "@/lib/subscriptions";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { reference } = body;
+    const { reference, userId: bodyUserId, planId: bodyPlanId, sellerName: bodySellerName, userEmail: bodyEmail } = body;
 
     if (!reference) {
       return NextResponse.json({ error: "Transaction reference is required." }, { status: 400 });
@@ -33,14 +34,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Extract verified payment metadata
-    const metadata = payData.metadata || {};
-    const userId = metadata.user_id;
-    const planName = metadata.plan_name || "Seller Subscription";
-    const durationDays = Number(metadata.duration_days) || 30;
-    const amountGhs = Number(metadata.amount_ghs) || Math.round(payData.amount / 100);
-    const sellerName = metadata.seller_name || "Seller";
-    const customerEmail = payData.customer?.email || "";
+    // 2. Extract verified payment metadata (robust parsing for objects or strings)
+    let metadata: Record<string, unknown> = {};
+    if (typeof payData.metadata === "string") {
+      try {
+        metadata = JSON.parse(payData.metadata) as Record<string, unknown>;
+      } catch {
+        metadata = {};
+      }
+    } else if (payData.metadata && typeof payData.metadata === "object") {
+      metadata = payData.metadata as Record<string, unknown>;
+    }
+
+    let customFieldUserId: string | undefined;
+    let customFieldPlanName: string | undefined;
+    const customFields = metadata.custom_fields;
+    if (Array.isArray(customFields)) {
+      customFieldUserId = (customFields.find((f: { variable_name?: string }) => f?.variable_name === "seller_id") as { value?: string } | undefined)?.value;
+      customFieldPlanName = (customFields.find((f: { variable_name?: string }) => f?.variable_name === "plan_name") as { value?: string } | undefined)?.value;
+    }
+
+    const userId = (metadata.user_id as string | undefined) || customFieldUserId || bodyUserId;
+    const metaPlanName = metadata.plan_name as string | undefined;
+    const matchedPlan = SUBSCRIPTION_PLANS.find(p => p.id === bodyPlanId || p.name === metaPlanName);
+
+    const planName = metaPlanName || customFieldPlanName || matchedPlan?.name || "1 Month Standard";
+    const durationDays = Number(metadata.duration_days) || matchedPlan?.durationDays || 30;
+    const amountGhs = Number(metadata.amount_ghs) || matchedPlan?.priceGhs || Math.round(payData.amount / 100);
+    const sellerName = metadata.seller_name || bodySellerName || "UHASMART Seller";
+    const customerEmail = payData.customer?.email || bodyEmail || "";
     const paymentMethod = `Paystack ${payData.channel ? payData.channel.toUpperCase() : "Mobile Money"}`;
 
     if (!userId) {
