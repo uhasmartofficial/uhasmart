@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   CheckCircle2,
@@ -63,6 +63,16 @@ export default function SubscriptionModal({
   const [paymentStep, setPaymentStep] = useState<"select" | "prompting" | "success">("select");
   const [errorMessage, setErrorMessage] = useState("");
   const [successDate, setSuccessDate] = useState("");
+
+  // Auto-redirect to seller dashboard upon successful payment
+  useEffect(() => {
+    if (paymentStep === "success") {
+      const timer = setTimeout(() => {
+        window.location.href = "/seller";
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentStep]);
 
   if (!isOpen) return null;
 
@@ -244,6 +254,11 @@ export default function SubscriptionModal({
     setPaymentStep("select");
     setErrorMessage("");
     onClose();
+  }
+
+  function handleDone() {
+    handleReset();
+    window.location.href = "/seller";
   }
 
   return (
@@ -482,7 +497,7 @@ export default function SubscriptionModal({
 
               <button
                 type="button"
-                onClick={handleReset}
+                onClick={handleDone}
                 className="w-full rounded-2xl bg-blue-600 py-3.5 text-xs font-black text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 active:scale-95 transition-all"
               >
                 Done &bull; Return to Dashboard

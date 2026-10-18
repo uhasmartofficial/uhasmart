@@ -78,6 +78,7 @@ export default function SellerDashboard() {
   const [uploadProgressText, setUploadProgressText] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [syncingPayment, setSyncingPayment] = useState(false);
 
   // TWO POSTING OPTIONS: "products" (multiple uploads) vs "flyer" (promo flyer)
   const [postingOption, setPostingOption] = useState<"products" | "flyer">("products");
@@ -175,6 +176,35 @@ export default function SellerDashboard() {
               .eq("id", authData.user.id);
           }
         }
+
+        // If profile is still not marked active, check Paystack API for any recent uncredited transaction
+        if (prof.subscription_status !== "active" && authData.user.email) {
+          void (async () => {
+            try {
+              const syncRes = await fetch("/api/payment/paystack/sync", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: authData.user.id, email: authData.user.email }),
+              });
+              const syncData = await syncRes.json();
+              if (syncData.found && syncData.newExpiry) {
+                setProfile((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        subscription_status: "active",
+                        subscription_tier: syncData.planName || "Seller Subscription",
+                        subscription_expires_at: syncData.newExpiry,
+                      }
+                    : prev
+                );
+              }
+            } catch (syncErr) {
+              console.warn("Paystack sync notice:", syncErr);
+            }
+          })();
+        }
+
         // If metadata indicates seller but profile table hasn't updated yet, sync and self-heal
         if (metaRole === "seller" && prof.role !== "seller") {
           prof.role = "seller";
@@ -268,6 +298,31 @@ export default function SellerDashboard() {
       })();
     }
   }, [loadSellerData]);
+
+  async function handleSyncPayment() {
+    if (!user?.id || !user?.email) return;
+    setSyncingPayment(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/payment/paystack/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, email: user.email }),
+      });
+      const data = await res.json();
+      if (data.found && data.newExpiry) {
+        setSuccess(`Payment detected (${data.reference})! Your ${data.planName} subscription is now active.`);
+        void loadSellerData();
+      } else {
+        setError(data.message || "No recent uncredited Paystack payment found for your account.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to connect to Paystack sync service.");
+    } finally {
+      setSyncingPayment(false);
+    }
+  }
 
   // Multiple Image Selection (up to 20 pictures at once)
   function handleMultipleImagesChange(e: ChangeEvent<HTMLInputElement>) {
@@ -638,7 +693,7 @@ export default function SellerDashboard() {
                     ? "Subscription Expired"
                     : subscriptionState.isTrial
                     ? "30-Day Free Trial"
-                    : "Active Subscription"}
+                    : `Active Subscription • ${profile?.subscription_tier || "Standard"}`}
                 </span>
                 <span className="text-xs font-bold text-gray-500">
                   {subscriptionState.isExpired
@@ -652,7 +707,7 @@ export default function SellerDashboard() {
                   ? "Reactivate Your Listings with Mobile Money"
                   : subscriptionState.isTrial
                   ? `Enjoying UHASMART? ${subscriptionState.daysRemaining} days left in your free trial`
-                  : "Your Student Business is Fully Verified and Active"}
+                  : `Active ${profile?.subscription_tier || "Seller"} Plan • Ready for student buyers`}
               </h2>
 
               <p className="mt-0.5 text-xs text-gray-600 max-w-xl leading-relaxed">
@@ -663,18 +718,31 @@ export default function SellerDashboard() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowSubscriptionModal(true)}
-            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-xs font-black text-white shadow-md active:scale-95 transition-all shrink-0 ${
-              subscriptionState.isExpired
-                ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/25"
-                : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/25"
-            }`}
-          >
-            <Zap className="h-4 w-4" />
-            <span>{subscriptionState.isExpired ? "Renew with Mobile Money" : "Renew / Extend Plan"}</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+            <button
+              type="button"
+              onClick={handleSyncPayment}
+              disabled={syncingPayment}
+              className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 bg-white px-3.5 py-3 text-xs font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
+              title="Sync latest Paystack payment"
+            >
+              <Loader2 className={`h-3.5 w-3.5 text-gray-500 ${syncingPayment ? "animate-spin" : ""}`} />
+              <span>{syncingPayment ? "Syncing..." : "Sync Payment"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowSubscriptionModal(true)}
+              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-xs font-black text-white shadow-md active:scale-95 transition-all ${
+                subscriptionState.isExpired
+                  ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/25"
+                  : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/25"
+              }`}
+            >
+              <Zap className="h-4 w-4" />
+              <span>{subscriptionState.isExpired ? "Renew with Mobile Money" : "Renew / Extend Plan"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
