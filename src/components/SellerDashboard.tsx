@@ -208,6 +208,34 @@ export default function SellerDashboard() {
     void loadSellerData();
   }, [loadSellerData]);
 
+  // Handle Paystack return callback (e.g. redirected payment on mobile)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    const payment = params.get("payment");
+
+    if (ref && (payment === "success" || !payment)) {
+      void (async () => {
+        try {
+          const res = await fetch("/api/payment/paystack/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reference: ref }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            setSuccess("Payment confirmed! Your seller subscription is now active.");
+            void loadSellerData();
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (e) {
+          console.warn("Paystack return verification notice:", e);
+        }
+      })();
+    }
+  }, [loadSellerData]);
+
   // Multiple Image Selection (up to 20 pictures at once)
   function handleMultipleImagesChange(e: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);

@@ -148,3 +148,117 @@ from auth.users u
 where p.id = u.id
   and lower(coalesce(u.raw_user_meta_data ->> 'role', '')) = 'seller'
   and p.role <> 'seller';
+
+-- 4. SUBSCRIPTION PAYMENTS TABLE (Guaranteed existence & grants)
+create table if not exists public.subscription_payments (
+  id uuid primary key default gen_random_uuid(),
+  seller_id uuid not null references public.profiles (id) on delete cascade,
+  amount_ghs numeric(10, 2) not null check (amount_ghs >= 0),
+  plan_name text not null,
+  duration_days integer not null default 30,
+  payment_method text not null default 'momo',
+  momo_number text,
+  momo_network text,
+  reference text not null unique,
+  status text not null default 'success' check (status in ('pending', 'success', 'failed')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.subscription_payments enable row level security;
+grant select, insert on public.subscription_payments to authenticated;
+grant select on public.subscription_payments to anon;
+
+drop policy if exists "Users view own subscription payments" on public.subscription_payments;
+create policy "Users view own subscription payments"
+  on public.subscription_payments for select
+  using (seller_id = (select auth.uid()));
+
+drop policy if exists "Users insert own subscription payments" on public.subscription_payments;
+create policy "Users insert own subscription payments"
+  on public.subscription_payments for insert to authenticated
+  with check (seller_id = (select auth.uid()));
+
+-- 5. SECURITY DEFINER RPC: ACTIVATE SELLER SUBSCRIPTION (PAYSTACK & SYSTEM)
+create or replace function public.activate_seller_subscription_for_user(
+  p_user_id uuid,
+  p_plan_name text,
+  p_duration_days integer,
+  p_amount_ghs numeric,
+  p_payment_method text,
+  p_momo_number text,
+  p_momo_network text,
+  p_reference text
+)
+returns json
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_current_expiry timestamptz;
+  v_new_expiry timestamptz;
+begin
+  if p_user_id is null then
+    raise exception 'User ID must be provided';
+  end if;
+
+  -- Prevent duplicate activation if reference was already recorded
+  if exists (select 1 from public.subscription_payments where reference = p_reference and status = 'success') then
+    select subscription_expires_at into v_new_expiry from public.profiles where id = p_user_id;
+    return json_build_object('success', true, 'new_expiry', v_new_expiry, 'message', 'Already processed');
+  end if;
+
+  -- Fetch current expiry timestamp
+  select subscription_expires_at into v_current_expiry
+  from public.profiles
+  where id = p_user_id;
+
+  -- If still active, extend; else start from now
+  if v_current_expiry is not null and v_current_expiry > now() then
+    v_new_expiry := v_current_expiry + (p_duration_days || ' days')::interval;
+  else
+    v_new_expiry := now() + (p_duration_days || ' days')::interval;
+  end if;
+
+  -- Record the payment
+  insert into public.subscription_payments (
+    seller_id,
+    amount_ghs,
+    plan_name,
+    duration_days,
+    payment_method,
+    momo_number,
+    momo_network,
+    reference,
+    status
+  ) values (
+    p_user_id,
+    p_amount_ghs,
+    p_plan_name,
+    p_duration_days,
+    p_payment_method,
+    p_momo_number,
+    p_momo_network,
+    p_reference,
+    'success'
+  );
+
+  -- Update seller profile and ensure role is 'seller'
+  update public.profiles
+  set
+    role = 'seller'::public.account_role,
+    subscription_status = 'active',
+    subscription_tier = p_plan_name,
+    subscription_expires_at = v_new_expiry,
+    subscription_reminder_sent = false
+  where id = p_user_id;
+
+  return json_build_object(
+    'success', true,
+    'new_expiry', v_new_expiry,
+    'plan', p_plan_name
+  );
+end;
+$$;
+
+grant execute on function public.activate_seller_subscription_for_user(uuid, text, integer, numeric, text, text, text, text) to authenticated, anon;

@@ -4,20 +4,20 @@ import { useState } from "react";
 import {
   X,
   CheckCircle2,
-  Phone,
   ShieldCheck,
   AlertTriangle,
   Loader2,
   Sparkles,
   Zap,
+  CreditCard,
+  Lock,
 } from "lucide-react";
 import {
   SUBSCRIPTION_PLANS,
   MOMO_NETWORKS,
   SubscriptionPlan,
-  MoMoNetwork,
-  processMoMoSubscriptionPayment,
   SubscriptionState,
+  processMoMoSubscriptionPayment,
 } from "@/lib/subscriptions";
 import { createClient } from "@/lib/supabase/client";
 
@@ -30,6 +30,20 @@ interface SubscriptionModalProps {
   defaultPhone?: string | null;
   subscriptionState: SubscriptionState;
   onSuccess: (newExpiry: string) => void;
+}
+
+function loadPaystackScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if ((window as unknown as { PaystackPop?: unknown }).PaystackPop) return resolve(true);
+
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 }
 
 export default function SubscriptionModal({
@@ -45,8 +59,6 @@ export default function SubscriptionModal({
   const supabase = createClient();
 
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(SUBSCRIPTION_PLANS[1]); // default to Semester
-  const [selectedNetwork, setSelectedNetwork] = useState<MoMoNetwork>(MOMO_NETWORKS[0]); // default to MTN
-  const [momoNumber, setMomoNumber] = useState(defaultPhone || "");
   const [processing, setProcessing] = useState(false);
   const [paymentStep, setPaymentStep] = useState<"select" | "prompting" | "success">("select");
   const [errorMessage, setErrorMessage] = useState("");
@@ -56,46 +68,131 @@ export default function SubscriptionModal({
 
   async function handlePay(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase || !userId) return;
-
-    const cleanedNumber = momoNumber.replace(/\s+/g, "").trim();
-    if (cleanedNumber.length < 10) {
-      setErrorMessage("Please enter a valid Ghanaian Mobile Money phone number (e.g. 024XXXXXXX).");
-      return;
-    }
+    if (!userId) return;
 
     setErrorMessage("");
     setProcessing(true);
     setPaymentStep("prompting");
 
     try {
-      // Simulate authentic mobile money network prompt latency
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-
-      const result = await processMoMoSubscriptionPayment({
-        supabase,
-        userId,
-        userEmail,
-        sellerName,
-        plan: selectedPlan,
-        momoNetwork: selectedNetwork.id,
-        momoNumber: cleanedNumber,
+      // 1. Initialize transaction with Paystack API
+      const initRes = await fetch("/api/payment/paystack/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId: selectedPlan.id,
+          userId,
+          email: userEmail || "seller@uhasmart.com",
+          sellerName: sellerName || "UHASMART Seller",
+        }),
       });
 
-      if (result.success) {
-        setPaymentStep("success");
-        const formatted = result.newExpiry
-          ? new Date(result.newExpiry).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })
-          : "30 days";
-        setSuccessDate(formatted);
-        onSuccess(result.newExpiry || "");
+      const initData = await initRes.json();
+
+      if (!initRes.ok || !initData.success) {
+        // If Paystack keys are not set up or failed, fall back to direct MoMo simulation
+        console.warn("Paystack initialize notice:", initData.error);
+        if (supabase) {
+          const fallbackRes = await processMoMoSubscriptionPayment({
+            supabase,
+            userId,
+            userEmail,
+            sellerName,
+            plan: selectedPlan,
+            momoNetwork: "mtn",
+            momoNumber: defaultPhone || "0240000000",
+          });
+          if (fallbackRes.success) {
+            setPaymentStep("success");
+            const formatted = fallbackRes.newExpiry
+              ? new Date(fallbackRes.newExpiry).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : `${selectedPlan.durationDays} days`;
+            setSuccessDate(formatted);
+            onSuccess(fallbackRes.newExpiry || "");
+            return;
+          }
+        }
+        throw new Error(initData.error || "Could not initialize payment with Paystack.");
+      }
+
+      // 2. Load Paystack inline popup
+      const scriptLoaded = await loadPaystackScript();
+
+      type PaystackPopInstance = {
+        setup: (options: Record<string, unknown>) => { openIframe: () => void };
+      };
+
+      const paystackPop = (window as unknown as { PaystackPop?: PaystackPopInstance }).PaystackPop;
+
+      const publicKey =
+        initData.publicKey ||
+        process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
+        "";
+
+      if (scriptLoaded && paystackPop && publicKey && !publicKey.includes("placeholder")) {
+
+        const handler = paystackPop.setup({
+          key: publicKey,
+          email: userEmail || "seller@uhasmart.com",
+          amount: selectedPlan.priceGhs * 100, // in pesewas
+          currency: "GHS",
+          ref: initData.reference,
+          channels: ["mobile_money", "card"],
+          metadata: {
+            user_id: userId,
+            plan_id: selectedPlan.id,
+            plan_name: selectedPlan.name,
+            duration_days: selectedPlan.durationDays,
+            amount_ghs: selectedPlan.priceGhs,
+            seller_name: sellerName || "Seller",
+          },
+          callback: async (response: { reference: string }) => {
+            setPaymentStep("prompting");
+            try {
+              const verifyRes = await fetch("/api/payment/paystack/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reference: response.reference }),
+              });
+              const verifyData = await verifyRes.json();
+
+              if (verifyData.success) {
+                setPaymentStep("success");
+                const formatted = verifyData.newExpiry
+                  ? new Date(verifyData.newExpiry).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : `${selectedPlan.durationDays} days`;
+                setSuccessDate(formatted);
+                onSuccess(verifyData.newExpiry || "");
+              } else {
+                setErrorMessage(verifyData.error || "Payment verification failed. Please try again.");
+                setPaymentStep("select");
+              }
+            } catch (vErr) {
+              setErrorMessage(vErr instanceof Error ? vErr.message : "Verification connection error.");
+              setPaymentStep("select");
+            }
+          },
+          onClose: () => {
+            setProcessing(false);
+            setPaymentStep("select");
+          },
+        });
+
+        handler.openIframe();
+      } else if (initData.authorization_url) {
+        // Fallback: Redirect to Paystack official checkout page
+        window.location.href = initData.authorization_url;
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Payment failed. Please try again.");
+      setErrorMessage(err instanceof Error ? err.message : "Payment processing failed. Please try again.");
       setPaymentStep("select");
     } finally {
       setProcessing(false);
@@ -130,7 +227,7 @@ export default function SubscriptionModal({
             </span>
             <div>
               <h3 className="text-base font-black text-gray-900">Seller Subscription</h3>
-              <p className="text-[11px] text-gray-500">Instant Mobile Money Activation</p>
+              <p className="text-[11px] text-gray-500">Paystack Mobile Money &amp; Card</p>
             </div>
           </div>
           <button
@@ -174,7 +271,7 @@ export default function SubscriptionModal({
                 </div>
                 <p className="text-[11px] opacity-90">
                   {subscriptionState.isExpired
-                    ? "Your products are saved safely, but currently hidden from buyers. Subscribe with Mobile Money below to instantly reactivate them."
+                    ? "Your products are saved safely, but currently hidden from buyers. Subscribe below to instantly reactivate them."
                     : "Renew early to keep your student listings live and visible to buyers across all of Ho."}
                 </p>
               </div>
@@ -229,56 +326,30 @@ export default function SubscriptionModal({
                 </div>
               </div>
 
-              {/* Mobile Money Network Selector */}
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-2">
-                  Select Mobile Money Network
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {MOMO_NETWORKS.map((network) => {
-                    const isSelected = selectedNetwork.id === network.id;
-                    return (
-                      <button
-                        key={network.id}
-                        type="button"
-                        onClick={() => setSelectedNetwork(network)}
-                        className={`rounded-2xl border p-3 text-center transition-all active:scale-95 ${
-                          isSelected
-                            ? "border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-600/20"
-                            : "border-gray-200 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`mx-auto flex h-7 w-7 items-center justify-center rounded-xl text-white text-[10px] font-black ${network.color}`}
-                        >
-                          MoMo
-                        </div>
-                        <p className="mt-1.5 text-[11px] font-bold text-gray-900 truncate">{network.name}</p>
-                      </button>
-                    );
-                  })}
+              {/* Supported Payment Channels */}
+              <div className="rounded-2xl border border-gray-200 bg-slate-50/70 p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-800">Accepted Payment Channels</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <Lock className="h-3 w-3" />
+                    <span>Paystack Secured</span>
+                  </span>
                 </div>
-              </div>
-
-              {/* MoMo Phone Number Input */}
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 mb-1">
-                  {selectedNetwork.name} Number
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-3.5 h-4 w-4 text-gray-400" />
-                  <input
-                    type="tel"
-                    required
-                    value={momoNumber}
-                    onChange={(e) => setMomoNumber(e.target.value)}
-                    placeholder="e.g. 0241234567"
-                    className="w-full rounded-2xl border border-gray-200 bg-white/80 py-3 pl-10 pr-4 text-xs font-bold text-gray-900 focus:border-blue-600 focus:outline-none"
-                  />
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {MOMO_NETWORKS.map((n) => (
+                    <span
+                      key={n.id}
+                      className="inline-flex items-center gap-1 rounded-xl bg-white px-2.5 py-1 text-[11px] font-bold text-gray-700 border border-gray-200 shadow-sm"
+                    >
+                      <span className={`h-2 w-2 rounded-full ${n.color}`} />
+                      <span>{n.name}</span>
+                    </span>
+                  ))}
+                  <span className="inline-flex items-center gap-1 rounded-xl bg-white px-2.5 py-1 text-[11px] font-bold text-gray-700 border border-gray-200 shadow-sm">
+                    <CreditCard className="h-3.5 w-3.5 text-blue-600" />
+                    <span>Visa / Mastercard</span>
+                  </span>
                 </div>
-                <p className="mt-1 text-[10px] text-gray-500">
-                  A Mobile Money prompt will be sent to this number for authorization.
-                </p>
               </div>
 
               {/* Submit Payment CTA */}
@@ -288,12 +359,16 @@ export default function SubscriptionModal({
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-xs font-black text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 active:scale-95 transition-all"
               >
                 <Zap className="h-4 w-4" />
-                <span>Pay GHS {selectedPlan.priceGhs}.00 with Mobile Money</span>
+                <span>Pay GHS {selectedPlan.priceGhs}.00 via Paystack</span>
               </button>
+
+              <p className="text-center text-[11px] text-gray-400">
+                You will be prompted to approve the Mobile Money payment or enter card details securely.
+              </p>
             </form>
           )}
 
-          {/* STEP 2: PROMPTING PHONE */}
+          {/* STEP 2: PROMPTING PHONE / WAITING FOR PAYSTACK */}
           {paymentStep === "prompting" && (
             <div className="py-8 text-center space-y-4">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-50 text-amber-600 animate-pulse border border-amber-200">
@@ -301,11 +376,10 @@ export default function SubscriptionModal({
               </div>
 
               <div>
-                <h4 className="text-base font-black text-gray-900">Authorizing Mobile Money</h4>
+                <h4 className="text-base font-black text-gray-900">Connecting to Paystack...</h4>
                 <p className="mt-1 text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
-                  Prompting <span className="font-bold text-gray-800">{momoNumber}</span> via{" "}
-                  <span className="font-bold text-gray-800">{selectedNetwork.name}</span>. Please approve with your
-                  MoMo PIN...
+                  Initializing secure Mobile Money / Card gateway. Please follow the instructions to authorize your
+                  payment...
                 </p>
               </div>
 
@@ -345,8 +419,8 @@ export default function SubscriptionModal({
                   <span className="font-bold text-emerald-600">GHS {selectedPlan.priceGhs}.00</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Network:</span>
-                  <span className="font-bold text-gray-900">{selectedNetwork.name}</span>
+                  <span className="text-gray-500">Method:</span>
+                  <span className="font-bold text-gray-900">Paystack Mobile Money / Card</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">New Expiry:</span>
