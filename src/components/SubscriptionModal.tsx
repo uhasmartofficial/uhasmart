@@ -150,37 +150,39 @@ export default function SubscriptionModal({
             amount_ghs: selectedPlan.priceGhs,
             seller_name: sellerName || "Seller",
           },
-          callback: async (response: { reference: string }) => {
+          callback: function (response: { reference: string }) {
             setPaymentStep("prompting");
-            try {
-              const verifyRes = await fetch("/api/payment/paystack/verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ reference: response.reference }),
-              });
-              const verifyData = await verifyRes.json();
+            void (async () => {
+              try {
+                const verifyRes = await fetch("/api/payment/paystack/verify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ reference: response.reference }),
+                });
+                const verifyData = await verifyRes.json();
 
-              if (verifyData.success) {
-                setPaymentStep("success");
-                const formatted = verifyData.newExpiry
-                  ? new Date(verifyData.newExpiry).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })
-                  : `${selectedPlan.durationDays} days`;
-                setSuccessDate(formatted);
-                onSuccess(verifyData.newExpiry || "");
-              } else {
-                setErrorMessage(verifyData.error || "Payment verification failed. Please try again.");
+                if (verifyData.success) {
+                  setPaymentStep("success");
+                  const formatted = verifyData.newExpiry
+                    ? new Date(verifyData.newExpiry).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : `${selectedPlan.durationDays} days`;
+                  setSuccessDate(formatted);
+                  onSuccess(verifyData.newExpiry || "");
+                } else {
+                  setErrorMessage(verifyData.error || "Payment verification failed. Please try again.");
+                  setPaymentStep("select");
+                }
+              } catch (vErr) {
+                setErrorMessage(vErr instanceof Error ? vErr.message : "Verification connection error.");
                 setPaymentStep("select");
               }
-            } catch (vErr) {
-              setErrorMessage(vErr instanceof Error ? vErr.message : "Verification connection error.");
-              setPaymentStep("select");
-            }
+            })();
           },
-          onClose: () => {
+          onClose: function () {
             setProcessing(false);
             setPaymentStep("select");
           },
