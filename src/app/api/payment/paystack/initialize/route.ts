@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
     }
 
     const reference = `UHA-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://uhasmart.com";
+    const origin = req.headers.get("origin") || req.nextUrl.origin;
+    const siteUrl = origin || process.env.NEXT_PUBLIC_SITE_URL || "https://uhasmart.vercel.app";
     const callbackUrl = `${siteUrl}/seller?payment=success&ref=${reference}`;
 
     const metadata = {

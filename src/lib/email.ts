@@ -35,7 +35,7 @@ function getMailTransporter() {
 }
 
 const DEFAULT_FROM = process.env.SMTP_FROM || `"UHASMART" <${process.env.SMTP_USER || "noreply@uhasmart.com"}>`;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://uhasmart.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://uhasmart.vercel.app";
 
 /**
  * 1. Send Seller Subscription Payment & Activation Receipt
