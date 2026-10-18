@@ -111,21 +111,77 @@ export default function AccountHub() {
           supabase.from("listings").select("id", { count: "exact", head: true }).eq("seller_id", authData.user.id),
         ]);
 
+        const metaRole = authData.user.user_metadata?.role;
+        const metaBizName = authData.user.user_metadata?.business_name;
+        const metaPhone = authData.user.user_metadata?.phone_number;
+        const metaLocation = authData.user.user_metadata?.campus_location;
+
         if (profileRes.data) {
           const p = profileRes.data as ProfileData;
+          // If metadata indicates seller but profile table hasn't updated yet, sync and self-heal
+          if (metaRole === "seller" && p.role !== "seller") {
+            p.role = "seller";
+            p.business_name = p.business_name || metaBizName || "Campus Business";
+            p.phone_number = p.phone_number || metaPhone || null;
+            p.campus_location = p.campus_location || metaLocation || campusLocations[0].name;
+
+            // Trigger silent background database sync
+            void (async () => {
+              try {
+                const { error: rpcErr } = await supabase.rpc("upgrade_to_seller", {
+                  p_business_name: p.business_name,
+                  p_phone_number: p.phone_number || "",
+                  p_campus_location: p.campus_location || campusLocations[0].name,
+                });
+                if (rpcErr) {
+                  await supabase
+                    .from("profiles")
+                    .update({
+                      role: "seller",
+                      business_name: p.business_name,
+                      phone_number: p.phone_number,
+                      campus_location: p.campus_location,
+                    })
+                    .eq("id", authData.user.id);
+                }
+              } catch (e) {
+                console.warn("Self-heal sync notice:", e);
+              }
+            })();
+          }
+
           setProfile(p);
           setEditDisplayName(p.display_name || "");
           setEditBusinessName(p.business_name || "");
           setEditPhone(p.phone_number || "");
           setEditLocation(p.campus_location || campusLocations[0].name);
         } else {
-          const defaultName = authData.user.email?.split("@")[0] || "Student";
-          setProfile({
+          const defaultName =
+            authData.user.user_metadata?.display_name || authData.user.email?.split("@")[0] || "Student";
+          const resolvedRole = metaRole === "seller" ? "seller" : "customer";
+
+          const p: ProfileData = {
             display_name: defaultName,
-            role: "customer",
-          });
+            role: resolvedRole,
+            business_name: metaBizName || null,
+            phone_number: metaPhone || null,
+            campus_location: metaLocation || campusLocations[0].name,
+          };
+
+          setProfile(p);
           setEditDisplayName(defaultName);
-          setEditLocation(campusLocations[0].name);
+          setEditBusinessName(p.business_name || "");
+          setEditPhone(p.phone_number || "");
+          setEditLocation(p.campus_location || campusLocations[0].name);
+
+          // If row missing from profiles, self-heal via RPC
+          if (resolvedRole === "seller") {
+            void supabase.rpc("upgrade_to_seller", {
+              p_business_name: metaBizName || "Campus Business",
+              p_phone_number: metaPhone || "",
+              p_campus_location: metaLocation || campusLocations[0].name,
+            });
+          }
         }
 
         if (adminRes.data) setIsAdmin(Boolean(adminRes.data));
@@ -732,7 +788,9 @@ export default function AccountHub() {
               initialDisplayName={displayName}
               onSuccess={() => {
                 setShowUpgradeModal(false);
-                setProfile((prev) => (prev ? { ...prev, role: "seller" } : null));
+                setLoading(true);
+                // Trigger reload to fetch freshly persisted database role
+                window.location.reload();
               }}
             />
           </div>

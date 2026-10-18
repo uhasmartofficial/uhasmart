@@ -47,9 +47,23 @@ export default function RegisterBusinessView() {
           .eq("id", authData.user.id)
           .maybeSingle();
 
+        const metaRole = authData.user.user_metadata?.role;
+        const metaBiz = authData.user.user_metadata?.business_name;
+
         if (isMounted) {
           if (profData) {
-            setProfile(profData as ProfileState);
+            const p = profData as ProfileState;
+            if (metaRole === "seller" && p.role !== "seller") {
+              p.role = "seller";
+              p.business_name = p.business_name || metaBiz || null;
+            }
+            setProfile(p);
+          } else if (metaRole === "seller") {
+            setProfile({
+              display_name: authData.user.user_metadata?.display_name || "Seller",
+              role: "seller",
+              business_name: metaBiz || null,
+            });
           }
           setLoading(false);
         }

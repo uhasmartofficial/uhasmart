@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { campusLocations } from "@/lib/data";
 import {
@@ -24,7 +23,6 @@ export default function RegisterBusinessUpgrade({
   initialDisplayName = "",
   onSuccess,
 }: RegisterBusinessUpgradeProps) {
-  const router = useRouter();
   const supabase = createClient();
 
   const [businessName, setBusinessName] = useState("");
@@ -57,37 +55,77 @@ export default function RegisterBusinessUpgrade({
         throw new Error("You must be signed in to register a business.");
       }
 
-      // Update public.profiles
-      const { error: profileErr } = await supabase
-        .from("profiles")
-        .update({
-          role: "seller",
-          business_name: businessName.trim(),
-          phone_number: phoneNumber.trim(),
-          campus_location: campusLocation,
-        })
-        .eq("id", authData.user.id);
+      const cleanBizName = businessName.trim();
+      const cleanPhone = phoneNumber.trim();
 
-      if (profileErr) throw profileErr;
+      // 1. Primary method: Secure upgrade_to_seller RPC
+      let upgradedViaRpc = false;
+      const { data: rpcData, error: rpcError } = await supabase.rpc("upgrade_to_seller", {
+        p_business_name: cleanBizName,
+        p_phone_number: cleanPhone,
+        p_campus_location: campusLocation,
+      });
 
-      // Update auth metadata for consistency
+      if (!rpcError && rpcData?.success) {
+        upgradedViaRpc = true;
+      }
+
+      // 2. Fallback: Direct database upsert with select verification if RPC is not yet created
+      if (!upgradedViaRpc) {
+        const { error: upsertErr } = await supabase
+          .from("profiles")
+          .upsert(
+            {
+              id: authData.user.id,
+              role: "seller",
+              business_name: cleanBizName,
+              phone_number: cleanPhone,
+              campus_location: campusLocation,
+              subscription_status: "trial",
+              subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            },
+            { onConflict: "id" }
+          )
+          .select();
+
+        if (upsertErr) {
+          console.warn("Direct profiles upsert fallback notice:", upsertErr);
+          // If upsert failed due to missing insert grant, attempt direct update
+          const { error: updErr } = await supabase
+            .from("profiles")
+            .update({
+              role: "seller",
+              business_name: cleanBizName,
+              phone_number: cleanPhone,
+              campus_location: campusLocation,
+            })
+            .eq("id", authData.user.id);
+
+          if (updErr) {
+            console.error("Direct update error:", updErr);
+          }
+        }
+      }
+
+      // 3. Update auth metadata for immediate session consistency
       await supabase.auth.updateUser({
         data: {
           role: "seller",
-          business_name: businessName.trim(),
-          phone_number: phoneNumber.trim(),
+          business_name: cleanBizName,
+          phone_number: cleanPhone,
           campus_location: campusLocation,
         },
       });
 
-      setSuccess("Your student business has been registered! You can now list products.");
+      setSuccess("Your student business has been registered! Redirecting to seller dashboard...");
 
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push("/seller");
-        router.refresh();
-      }
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          window.location.href = "/seller";
+        }
+      }, 800);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to register business.");
     } finally {

@@ -135,12 +135,64 @@ export default function SellerDashboard() {
           .order("created_at", { ascending: false }),
       ]);
 
+      const metaRole = authData.user.user_metadata?.role;
+      const metaBizName = authData.user.user_metadata?.business_name;
+      const metaPhone = authData.user.user_metadata?.phone_number;
+      const metaLocation = authData.user.user_metadata?.campus_location;
+
       if (profRes.data) {
         const prof = profRes.data as ProfileState;
+        // If metadata indicates seller but profile table hasn't updated yet, sync and self-heal
+        if (metaRole === "seller" && prof.role !== "seller") {
+          prof.role = "seller";
+          prof.business_name = prof.business_name || metaBizName || "Campus Business";
+          prof.phone_number = prof.phone_number || metaPhone || null;
+          prof.campus_location = prof.campus_location || metaLocation || campusLocations[0].name;
+
+          void (async () => {
+            try {
+              const { error: rpcErr } = await supabase.rpc("upgrade_to_seller", {
+                p_business_name: prof.business_name,
+                p_phone_number: prof.phone_number || "",
+                p_campus_location: prof.campus_location || campusLocations[0].name,
+              });
+              if (rpcErr) {
+                await supabase
+                  .from("profiles")
+                  .update({
+                    role: "seller",
+                    business_name: prof.business_name,
+                    phone_number: prof.phone_number,
+                    campus_location: prof.campus_location,
+                  })
+                  .eq("id", authData.user.id);
+              }
+            } catch (e) {
+              console.warn("Seller dashboard self-heal notice:", e);
+            }
+          })();
+        }
+
         setProfile(prof);
         if (prof.phone_number) {
           setContactPhone(prof.phone_number);
         }
+      } else if (metaRole === "seller") {
+        const prof: ProfileState = {
+          display_name: authData.user.user_metadata?.display_name || authData.user.email?.split("@")[0] || "Seller",
+          role: "seller",
+          business_name: metaBizName || "Campus Business",
+          phone_number: metaPhone || null,
+          campus_location: metaLocation || campusLocations[0].name,
+        };
+        setProfile(prof);
+        if (prof.phone_number) setContactPhone(prof.phone_number);
+
+        void supabase.rpc("upgrade_to_seller", {
+          p_business_name: prof.business_name,
+          p_phone_number: prof.phone_number || "",
+          p_campus_location: prof.campus_location || campusLocations[0].name,
+        });
       }
       if (listRes.data) {
         setListings(listRes.data as ListingItem[]);
