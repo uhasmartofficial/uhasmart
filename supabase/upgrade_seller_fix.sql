@@ -1,21 +1,55 @@
 -- ==============================================================================
--- UHASMART - FIX SELLER UPGRADE & ROLE PERSISTENCE
+-- UHASMART - COMPLETE ALL-IN-ONE FIX SCRIPT
 -- ==============================================================================
 -- Run this script in your Supabase Dashboard -> SQL Editor:
 -- https://supabase.com/dashboard/project/fjhlczvwmlvtxdxcnhxi/sql/new
 --
--- This script fixes:
--- 1. Automatic & persistent upgrading of customer accounts to student sellers
--- 2. Security Definer RPC function that guarantees role persistence across refreshes
--- 3. Grants & RLS policies on public.profiles so authenticated users can insert/update their profile
--- 4. Instant sync between auth.users metadata and public.profiles table
+-- This script guarantees:
+-- 1. All required columns exist on profiles and listings (safe, idempotent)
+-- 2. Seller role upgrade & persistence across page refreshes
+-- 3. Security Definer RPCs for upgrading to seller and activating subscriptions
+-- 4. Subscription payments table creation with RLS and permissions
+-- 5. Storage bucket permissions for listing images
 -- ==============================================================================
 
--- 1. TABLE PERMISSIONS & RLS POLICIES FOR PROFILES
+-- 1. ENSURE PROFILES COLUMNS EXIST
+alter table public.profiles
+  add column if not exists subscription_status text not null default 'trial',
+  add column if not exists subscription_tier text default 'free_trial',
+  add column if not exists trial_started_at timestamptz default now(),
+  add column if not exists trial_ends_at timestamptz default (now() + interval '30 days'),
+  add column if not exists subscription_expires_at timestamptz default (now() + interval '30 days'),
+  add column if not exists subscription_reminder_sent boolean default false;
+
+-- Backfill any existing profiles missing subscription dates
+update public.profiles
+set
+  trial_started_at = coalesce(trial_started_at, created_at, now()),
+  trial_ends_at = coalesce(trial_ends_at, coalesce(created_at, now()) + interval '30 days'),
+  subscription_expires_at = coalesce(subscription_expires_at, coalesce(created_at, now()) + interval '30 days'),
+  subscription_status = coalesce(subscription_status, 'trial')
+where subscription_expires_at is null;
+
+-- 2. ENSURE LISTINGS COLUMNS EXIST (Photos, Flyers, Price Ranges)
+alter table public.listings
+  add column if not exists listing_type text not null default 'product',
+  add column if not exists gallery_images text[] default '{}',
+  add column if not exists price_type text not null default 'fixed',
+  add column if not exists price_max_ghs numeric(10, 2),
+  add column if not exists contact_phone text;
+
+alter table public.listings drop constraint if exists listings_listing_type_check;
+alter table public.listings add constraint listings_listing_type_check
+  check (listing_type in ('product', 'flyer'));
+
+alter table public.listings drop constraint if exists listings_price_type_check;
+alter table public.listings add constraint listings_price_type_check
+  check (price_type in ('fixed', 'range'));
+
+-- 3. TABLE PERMISSIONS & RLS POLICIES FOR PROFILES
 grant select, insert, update on public.profiles to authenticated;
 grant select on public.profiles to anon;
 
--- Ensure RLS is active but permits users to manage their own row
 alter table public.profiles enable row level security;
 
 drop policy if exists "Profiles are publicly readable" on public.profiles;
@@ -34,7 +68,7 @@ create policy "Users insert own profile"
   on public.profiles for insert to authenticated
   with check (id = (select auth.uid()));
 
--- 2. SECURITY DEFINER RPC: UPGRADE TO SELLER
+-- 4. SECURITY DEFINER RPC: UPGRADE TO SELLER
 create or replace function public.upgrade_to_seller(
   p_business_name text,
   p_phone_number text,
@@ -137,7 +171,7 @@ $$;
 
 grant execute on function public.upgrade_to_seller(text, text, text) to authenticated;
 
--- 3. AUTO-SYNC ANY EXISTING USERS WHO REQUESTED SELLER IN AUTH METADATA
+-- 5. AUTO-SYNC ANY EXISTING USERS WHO REQUESTED SELLER IN AUTH METADATA
 update public.profiles p
 set
   role = 'seller'::public.account_role,
@@ -149,14 +183,14 @@ where p.id = u.id
   and lower(coalesce(u.raw_user_meta_data ->> 'role', '')) = 'seller'
   and p.role <> 'seller';
 
--- 4. SUBSCRIPTION PAYMENTS TABLE (Guaranteed existence & grants)
+-- 6. SUBSCRIPTION PAYMENTS TABLE (Guaranteed existence & grants)
 create table if not exists public.subscription_payments (
   id uuid primary key default gen_random_uuid(),
   seller_id uuid not null references public.profiles (id) on delete cascade,
   amount_ghs numeric(10, 2) not null check (amount_ghs >= 0),
   plan_name text not null,
   duration_days integer not null default 30,
-  payment_method text not null default 'momo',
+  payment_method text not null default 'paystack',
   momo_number text,
   momo_network text,
   reference text not null unique,
@@ -178,7 +212,7 @@ create policy "Users insert own subscription payments"
   on public.subscription_payments for insert to authenticated
   with check (seller_id = (select auth.uid()));
 
--- 5. SECURITY DEFINER RPC: ACTIVATE SELLER SUBSCRIPTION (PAYSTACK & SYSTEM)
+-- 7. SECURITY DEFINER RPC: ACTIVATE SELLER SUBSCRIPTION (PAYSTACK & SYSTEM BY USER ID)
 create or replace function public.activate_seller_subscription_for_user(
   p_user_id uuid,
   p_plan_name text,
@@ -269,3 +303,61 @@ end;
 $$;
 
 grant execute on function public.activate_seller_subscription_for_user(uuid, text, integer, numeric, text, text, text, text) to authenticated, anon;
+
+-- 8. SECURITY DEFINER RPC: ACTIVATE SELLER SUBSCRIPTION (AUTH.UID() CALLER CONVENIENCE)
+create or replace function public.activate_seller_subscription(
+  p_plan_name text,
+  p_duration_days integer,
+  p_amount_ghs numeric,
+  p_payment_method text,
+  p_momo_number text,
+  p_momo_network text,
+  p_reference text
+)
+returns json
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception 'User must be authenticated';
+  end if;
+
+  return public.activate_seller_subscription_for_user(
+    v_user_id,
+    p_plan_name,
+    p_duration_days,
+    p_amount_ghs,
+    p_payment_method,
+    p_momo_number,
+    p_momo_network,
+    p_reference
+  );
+end;
+$$;
+
+grant execute on function public.activate_seller_subscription(text, integer, numeric, text, text, text, text) to authenticated;
+
+-- 9. ENSURE STORAGE BUCKET PERMISSIONS
+insert into storage.buckets (id, name, public)
+values ('listing-images', 'listing-images', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "Public Access for Listing Images" on storage.objects;
+create policy "Public Access for Listing Images"
+  on storage.objects for select
+  using (bucket_id = 'listing-images');
+
+drop policy if exists "Authenticated Users Upload Listing Images" on storage.objects;
+create policy "Authenticated Users Upload Listing Images"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'listing-images');
+
+drop policy if exists "Users Manage Their Own Listing Images" on storage.objects;
+create policy "Users Manage Their Own Listing Images"
+  on storage.objects for all to authenticated
+  using (bucket_id = 'listing-images' and (storage.foldername(name))[1] = auth.uid()::text);

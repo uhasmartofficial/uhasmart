@@ -185,29 +185,43 @@ export default function SubscriptionModal({
                   // Direct client-side sync using active authenticated user session
                   if (supabase && userId) {
                     try {
-                      await Promise.allSettled([
-                        supabase
-                          .from("profiles")
-                          .update({
-                            role: "seller",
-                            subscription_status: "active",
-                            subscription_tier: selectedPlan.name,
-                            subscription_expires_at: newExpiry,
-                            subscription_reminder_sent: false,
-                          })
-                          .eq("id", userId),
-                        supabase.from("subscription_payments").insert({
-                          seller_id: userId,
-                          amount_ghs: selectedPlan.priceGhs,
-                          plan_name: selectedPlan.name,
-                          duration_days: selectedPlan.durationDays,
-                          payment_method: "paystack",
-                          momo_number: defaultPhone || "Paystack",
-                          momo_network: "paystack",
-                          reference: response.reference,
-                          status: "success",
-                        }),
-                      ]);
+                      // Call security definer RPC first for guaranteed RLS bypass
+                      const { error: rpcErr } = await supabase.rpc("activate_seller_subscription_for_user", {
+                        p_user_id: userId,
+                        p_plan_name: selectedPlan.name,
+                        p_duration_days: selectedPlan.durationDays,
+                        p_amount_ghs: selectedPlan.priceGhs,
+                        p_payment_method: "paystack",
+                        p_momo_number: defaultPhone || "Paystack",
+                        p_momo_network: "paystack",
+                        p_reference: response.reference,
+                      });
+
+                      if (rpcErr) {
+                        await Promise.allSettled([
+                          supabase
+                            .from("profiles")
+                            .update({
+                              role: "seller",
+                              subscription_status: "active",
+                              subscription_tier: selectedPlan.name,
+                              subscription_expires_at: newExpiry,
+                              subscription_reminder_sent: false,
+                            })
+                            .eq("id", userId),
+                          supabase.from("subscription_payments").insert({
+                            seller_id: userId,
+                            amount_ghs: selectedPlan.priceGhs,
+                            plan_name: selectedPlan.name,
+                            duration_days: selectedPlan.durationDays,
+                            payment_method: "paystack",
+                            momo_number: defaultPhone || "Paystack",
+                            momo_network: "paystack",
+                            reference: response.reference,
+                            status: "success",
+                          }),
+                        ]);
+                      }
                     } catch (syncErr) {
                       console.warn("Client subscription sync notice:", syncErr);
                     }

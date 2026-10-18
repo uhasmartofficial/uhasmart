@@ -164,16 +164,34 @@ export default function SellerDashboard() {
             prof.subscription_tier = payRes.data.plan_name || "Seller Subscription";
             prof.subscription_expires_at = computedExpiry.toISOString();
 
-            void supabase
-              .from("profiles")
-              .update({
-                role: "seller",
-                subscription_status: "active",
-                subscription_tier: payRes.data.plan_name || "Seller Subscription",
-                subscription_expires_at: computedExpiry.toISOString(),
-                subscription_reminder_sent: false,
-              })
-              .eq("id", authData.user.id);
+            void (async () => {
+              try {
+                const { error: rpcErr } = await supabase.rpc("activate_seller_subscription_for_user", {
+                  p_user_id: authData.user.id,
+                  p_plan_name: payRes.data?.plan_name || "Seller Subscription",
+                  p_duration_days: durationDays,
+                  p_amount_ghs: payRes.data?.amount_ghs || 30,
+                  p_payment_method: "paystack",
+                  p_momo_number: "Paystack",
+                  p_momo_network: "paystack",
+                  p_reference: payRes.data?.reference || `SYNC-${Date.now()}`,
+                });
+                if (rpcErr) {
+                  await supabase
+                    .from("profiles")
+                    .update({
+                      role: "seller",
+                      subscription_status: "active",
+                      subscription_tier: payRes.data?.plan_name || "Seller Subscription",
+                      subscription_expires_at: computedExpiry.toISOString(),
+                      subscription_reminder_sent: false,
+                    })
+                    .eq("id", authData.user.id);
+                }
+              } catch (healErr) {
+                console.warn("Auto-heal subscription notice:", healErr);
+              }
+            })();
           }
         }
 
