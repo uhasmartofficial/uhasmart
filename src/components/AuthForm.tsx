@@ -78,9 +78,11 @@ export default function AuthForm({ mode, defaultRole = "customer" }: AuthFormPro
           );
         }
       } else {
-        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) throw authError;
-        router.push("/marketplace");
+        // Role-based redirect: sellers go to their dashboard, customers go to marketplace
+        const userRole = signInData?.user?.user_metadata?.role;
+        router.push(userRole === "seller" ? "/seller" : "/marketplace");
         router.refresh();
       }
     } catch (authError) {
