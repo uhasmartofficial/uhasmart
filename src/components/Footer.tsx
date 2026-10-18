@@ -1,17 +1,15 @@
 import Link from "next/link";
-import { ShoppingBag, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2">
-            <span className="rounded-xl bg-blue-600 p-1.5 shadow-sm">
-              <ShoppingBag className="h-5 w-5 text-white" />
-            </span>
-            <span className="text-xl font-bold tracking-tight text-blue-700">UHASMART</span>
-          </div>
+          <Link href="/" className="group flex items-center">
+            <Logo size="sm" />
+          </Link>
 
           <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
             <Link href="/" className="hover:text-blue-600">Home</Link>

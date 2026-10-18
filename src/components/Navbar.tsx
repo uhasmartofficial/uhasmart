@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, ShoppingBag, UserRound, X, ShieldCheck } from "lucide-react";
+import { Menu, UserRound, X, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUnreadMessages } from "@/lib/useUnreadMessages";
+import Logo from "@/components/Logo";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -69,11 +70,8 @@ export default function Navbar() {
   return (
     <nav aria-label="Main navigation" className="sticky top-0 z-50 glass-nav">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="group flex items-center gap-2" aria-label="UHASMART home">
-          <span className="rounded-xl bg-blue-600 p-1.5 shadow-sm transition-colors group-hover:bg-blue-700">
-            <ShoppingBag className="h-5 w-5 text-white" aria-hidden="true" />
-          </span>
-          <span className="text-xl font-bold tracking-tight text-blue-700">UHASMART</span>
+        <Link href="/" className="group flex items-center" aria-label="UHASMART home">
+          <Logo size="md" />
         </Link>
 
         <div className="hidden items-center gap-2 md:flex">
