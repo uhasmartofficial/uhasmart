@@ -58,7 +58,7 @@ export default function SubscriptionModal({
 }: SubscriptionModalProps) {
   const supabase = createClient();
 
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(SUBSCRIPTION_PLANS[1]); // default to Semester
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(SUBSCRIPTION_PLANS[0]); // default to 1 Cedi test plan during testing
   const [processing, setProcessing] = useState(false);
   const [paymentStep, setPaymentStep] = useState<"select" | "prompting" | "success">("select");
   const [errorMessage, setErrorMessage] = useState("");
