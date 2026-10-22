@@ -12,15 +12,6 @@ export interface SubscriptionPlan {
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
-    id: "test",
-    name: "Live Test Plan",
-    priceGhs: 1,
-    durationDays: 1,
-    badge: "GHS 1 Test",
-    highlight: true,
-    description: "Temporary 1 Cedi test plan for live Mobile Money verification.",
-  },
-  {
     id: "monthly",
     name: "1 Month Standard",
     priceGhs: 30,
@@ -33,6 +24,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     priceGhs: 80,
     durationDays: 120,
     badge: "Most Popular",
+    highlight: true,
     description: "Covers the whole UHAS academic semester. Save GHS 40!",
   },
   {
