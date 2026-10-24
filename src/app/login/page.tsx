@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import AccountView from "@/components/AccountView";
 
 export const metadata: Metadata = {
-  title: "My Account | UHASMART",
+  title: "Login | VarsMart",
 };
 
 export default function LoginPage() {

@@ -333,7 +333,7 @@ export default function AdminDashboard() {
     return (
       <div className="flex w-full flex-col items-center justify-center py-20 text-center">
         <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="mt-4 text-sm font-semibold text-gray-700">Loading UHASMART Admin Console...</p>
+        <p className="mt-4 text-sm font-semibold text-gray-700">Loading VarsMart Admin Console...</p>
       </div>
     );
   }
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
         </div>
         <h1 className="mt-4 text-2xl font-extrabold text-gray-900">Sign in to Access Admin</h1>
         <p className="mt-2 text-sm leading-relaxed text-gray-600">
-          Moderator and administrator access requires an authenticated UHASMART account.
+          Moderator and administrator access requires an authenticated VarsMart account.
         </p>
         <Link
           href="/login"
@@ -452,7 +452,7 @@ export default function AdminDashboard() {
               Authorized
             </span>
           </div>
-          <h1 className="mt-2 text-2xl font-extrabold text-gray-900 sm:text-3xl">UHASMART Moderation Control</h1>
+          <h1 className="mt-2 text-2xl font-extrabold text-gray-900 sm:text-3xl">VarsMart Moderation Control</h1>
           <p className="mt-1 text-xs text-gray-500">
             Signed in as {currentUser?.email} &bull; Manage student sellers, items, and platform safety.
           </p>

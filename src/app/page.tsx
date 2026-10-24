@@ -48,7 +48,7 @@ export default function HomePage() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-3.5 text-xs sm:text-sm font-bold text-gray-800 shadow-sm hover:border-gray-300 hover:bg-gray-50 active:scale-95 transition-all"
               >
                 <Store className="h-4 w-4 text-purple-600" />
-                <span>Sell on UHASMART</span>
+                <span>Sell on VarsMart</span>
               </Link>
             </div>
 
@@ -59,8 +59,8 @@ export default function HomePage() {
                 <p className="text-[10px] sm:text-xs font-semibold text-gray-500">Free to List</p>
               </div>
               <div className="rounded-2xl bg-blue-50/50 p-2.5 sm:p-4">
-                <p className="text-lg sm:text-2xl font-black text-blue-600">3</p>
-                <p className="text-[10px] sm:text-xs font-semibold text-gray-500">UHAS Campuses</p>
+                <p className="text-lg sm:text-2xl font-black text-blue-600">3+</p>
+                <p className="text-[10px] sm:text-xs font-semibold text-gray-500">Campuses &amp; Hostels</p>
               </div>
               <div className="rounded-2xl bg-slate-50/70 p-2.5 sm:p-4">
                 <p className="text-lg sm:text-2xl font-black text-gray-900">100%</p>
@@ -106,7 +106,7 @@ export default function HomePage() {
             <div className="text-center">
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Simple &amp; Safe</span>
               <h2 className="mt-1 text-2xl font-black text-gray-900 sm:text-3xl">
-                How UHASMART Works
+                How VarsMart Works
               </h2>
             </div>
 

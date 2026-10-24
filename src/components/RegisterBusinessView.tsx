@@ -107,7 +107,7 @@ export default function RegisterBusinessView() {
           <strong className="font-bold text-gray-900">
             {profile.business_name || "Campus Business"}
           </strong>{" "}
-          is registered and active on UHASMART.
+          is registered and active on VarsMart.
         </p>
         <Link
           href="/seller"

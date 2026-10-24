@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import RegisterBusinessView from "@/components/RegisterBusinessView";
 
 export const metadata: Metadata = {
-  title: "Register Business | UHASMART",
+  title: "Register Business | VarsMart",
 };
 
 export default function RegisterBusinessPage() {

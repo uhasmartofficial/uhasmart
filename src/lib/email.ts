@@ -34,7 +34,7 @@ function getMailTransporter() {
   } as TransporterConfig);
 }
 
-const DEFAULT_FROM = process.env.SMTP_FROM || `"UHASMART" <${process.env.SMTP_USER || "noreply@uhasmart.com"}>`;
+const DEFAULT_FROM = process.env.SMTP_FROM || `"VarsMart" <${process.env.SMTP_USER || "noreply@varsmart.com"}>`;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://uhasmart.vercel.app";
 
 /**
@@ -57,7 +57,7 @@ export async function sendSubscriptionPaymentConfirmation({
   reference: string;
   expiryDate: string;
 }) {
-  const subject = `Payment Confirmed: Your UHASMART Seller Subscription is Active! 🎉`;
+  const subject = `Payment Confirmed: Your VarsMart Seller Subscription is Active! 🎉`;
   const sellerUrl = `${SITE_URL}/seller`;
 
   const html = `<!DOCTYPE html>
@@ -65,7 +65,7 @@ export async function sendSubscriptionPaymentConfirmation({
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment Receipt - UHASMART</title>
+  <title>Payment Receipt - VarsMart</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 15px;">
@@ -76,7 +76,7 @@ export async function sendSubscriptionPaymentConfirmation({
           <!-- Header Banner -->
           <tr>
             <td style="background-color: #2563eb; padding: 28px 32px; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff;">UHASMART</h1>
+              <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff;">VarsMart</h1>
               <p style="margin: 4px 0 0 0; font-size: 12px; color: #bfdbfe; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                 Official Payment Receipt &bull; Seller Subscription
               </p>
@@ -95,7 +95,7 @@ export async function sendSubscriptionPaymentConfirmation({
               </h2>
 
               <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-                Your Mobile Money payment has been successfully confirmed. Your seller account is now fully active, and all your product listings and promotional flyers are live for students across UHAS and Ho!
+                Your Mobile Money payment has been successfully confirmed. Your seller account is now fully active, and all your product listings and promotional flyers are live for students across campus and town!
               </p>
 
               <!-- Payment Receipt Table -->
@@ -158,7 +158,7 @@ export async function sendSubscriptionPaymentConfirmation({
           <tr>
             <td style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #f1f5f9; text-align: center;">
               <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: 700; color: #64748b;">
-                UHASMART &bull; Sokode &bull; Dave &bull; Trafalgar &bull; Ho, Volta Region, Ghana
+                VarsMart &bull; Campus Marketplace &bull; Ho, Volta Region, Ghana
               </p>
               <p style="margin: 0; font-size: 10px; color: #94a3b8;">
                 This is an automated payment receipt. Keep this email for your records.
@@ -206,8 +206,8 @@ export async function sendSubscriptionRenewalReminder({
   isExpired: boolean;
 }) {
   const subject = isExpired
-    ? `⚠️ Action Required: Your UHASMART Seller Subscription has Expired`
-    : `⚠️ Notice: Your UHASMART Seller Subscription Expires in ${daysRemaining} Days`;
+    ? `⚠️ Action Required: Your VarsMart Seller Subscription has Expired`
+    : `⚠️ Notice: Your VarsMart Seller Subscription Expires in ${daysRemaining} Days`;
 
   const sellerUrl = `${SITE_URL}/seller`;
 
@@ -232,7 +232,7 @@ export async function sendSubscriptionRenewalReminder({
           <!-- Header Banner -->
           <tr>
             <td style="background-color: #2563eb; padding: 28px 32px; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff;">UHASMART</h1>
+              <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: #ffffff;">VarsMart</h1>
               <p style="margin: 4px 0 0 0; font-size: 12px; color: #bfdbfe; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                 Seller Subscription Notice
               </p>
@@ -253,20 +253,20 @@ export async function sendSubscriptionRenewalReminder({
               <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #475569;">
                 ${
                   isExpired
-                    ? `Your seller subscription on <strong>UHASMART</strong> has expired as of <strong>${expiryDate}</strong>. Your product listings are safely preserved in your account, but are currently <strong>hidden from campus buyers</strong> until you renew.`
-                    : `Your seller subscription on <strong>UHASMART</strong> is expiring in <strong>${daysRemaining} days</strong> (on <strong>${expiryDate}</strong>). Renew today so your store remains visible without interruption.`
+                    ? `Your seller subscription on <strong>VarsMart</strong> has expired as of <strong>${expiryDate}</strong>. Your product listings are safely preserved in your account, but are currently <strong>hidden from campus buyers</strong> until you renew.`
+                    : `Your seller subscription on <strong>VarsMart</strong> is expiring in <strong>${daysRemaining} days</strong> (on <strong>${expiryDate}</strong>). Renew today so your store remains visible without interruption.`
                 }
               </p>
 
               <!-- Benefits List -->
               <div style="background-color: #f1f5f9; border-radius: 14px; padding: 18px 20px; margin: 0 0 20px 0;">
                 <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 800; color: #0f172a;">
-                  Why Stay Active on UHASMART?
+                  Why Stay Active on VarsMart?
                 </p>
                 <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; color: #334155;">
                   <li><strong>Instant WhatsApp Leads:</strong> Students message you directly with 1 tap.</li>
                   <li><strong>Multiple Pictures &amp; Flyers:</strong> Post up to 20 photos or promotional posters.</li>
-                  <li><strong>Ho-Wide Reach:</strong> Sokode, Trafalgar, Dave, and all UHAS campuses.</li>
+                  <li><strong>Campus-Wide Reach:</strong> Sokode, Trafalgar, Dave, and all campus hostels.</li>
                   <li><strong>Verified Seller Trust:</strong> Build your reputation with student ratings.</li>
                 </ul>
               </div>
@@ -325,10 +325,10 @@ export async function sendSubscriptionRenewalReminder({
           <tr>
             <td style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #f1f5f9; text-align: center;">
               <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: 700; color: #64748b;">
-                UHASMART &bull; Sokode &bull; Dave &bull; Trafalgar &bull; Ho, Volta Region, Ghana
+                VarsMart &bull; Campus Marketplace &bull; Ho, Volta Region, Ghana
               </p>
               <p style="margin: 0; font-size: 10px; color: #94a3b8;">
-                You are receiving this because you registered as a student business owner on UHASMART.
+                You are receiving this because you registered as a student business owner on VarsMart.
               </p>
             </td>
           </tr>

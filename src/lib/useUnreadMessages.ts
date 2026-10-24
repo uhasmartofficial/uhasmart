@@ -42,7 +42,10 @@ export function useUnreadMessages() {
       if (incomingMsgs && incomingMsgs.length > 0) {
         let lastViewed: string | null = null;
         try {
-          lastViewed = typeof window !== "undefined" ? localStorage.getItem("uhasmart_messages_last_read") : null;
+          lastViewed =
+            typeof window !== "undefined"
+              ? localStorage.getItem("varsmart_messages_last_read") || localStorage.getItem("uhasmart_messages_last_read")
+              : null;
         } catch {
           lastViewed = null;
         }
@@ -106,7 +109,7 @@ export function useUnreadMessages() {
   const markAllRead = useCallback(() => {
     try {
       if (typeof window !== "undefined") {
-        localStorage.setItem("uhasmart_messages_last_read", new Date().toISOString());
+        localStorage.setItem("varsmart_messages_last_read", new Date().toISOString());
         setUnreadCount(0);
       }
     } catch {

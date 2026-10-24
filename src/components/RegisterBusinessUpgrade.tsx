@@ -146,7 +146,7 @@ export default function RegisterBusinessUpgrade({
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-gray-500">
-        {initialDisplayName ? `Hi ${initialDisplayName}, upgrade` : "Upgrade"} your student customer account to a Student Seller to list products, food, thrift wear, or academic services on UHASMART.
+        {initialDisplayName ? `Hi ${initialDisplayName}, upgrade` : "Upgrade"} your student customer account to a Student Seller to list products, food, thrift wear, or academic services on VarsMart.
       </p>
 
       {error && (

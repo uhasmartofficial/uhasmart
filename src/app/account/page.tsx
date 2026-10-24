@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 import AccountHub from "@/components/AccountHub";
 
 export const metadata: Metadata = {
-  title: "My Account | UHASMART",
-  description: "Manage your UHASMART student account, profile, campus shop, and security settings.",
+  title: "My Account | VarsMart",
+  description: "Manage your VarsMart student account, profile, campus shop, and security settings.",
 };
 
 export default function AccountPage() {

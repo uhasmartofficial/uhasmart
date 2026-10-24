@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     const planName = metaPlanName || customFieldPlanName || matchedPlan?.name || "1 Month Standard";
     const durationDays = Number(metadata.duration_days) || matchedPlan?.durationDays || 30;
     const amountGhs = Number(metadata.amount_ghs) || matchedPlan?.priceGhs || Math.round(payData.amount / 100);
-    const sellerName = metadata.seller_name || bodySellerName || "UHASMART Seller";
+    const sellerName = metadata.seller_name || bodySellerName || "VarsMart Seller";
     const customerEmail = payData.customer?.email || bodyEmail || "";
     const paymentMethod = `Paystack ${payData.channel ? payData.channel.toUpperCase() : "Mobile Money"}`;
 

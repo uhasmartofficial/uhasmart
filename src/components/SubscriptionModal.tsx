@@ -92,8 +92,8 @@ export default function SubscriptionModal({
         body: JSON.stringify({
           planId: selectedPlan.id,
           userId,
-          email: userEmail || "seller@uhasmart.com",
-          sellerName: sellerName || "UHASMART Seller",
+          email: userEmail || "seller@varsmart.com",
+          sellerName: sellerName || "VarsMart Seller",
         }),
       });
 
@@ -147,7 +147,7 @@ export default function SubscriptionModal({
 
         const handler = paystackPop.setup({
           key: publicKey,
-          email: userEmail || "seller@uhasmart.com",
+          email: userEmail || "seller@varsmart.com",
           amount: selectedPlan.priceGhs * 100, // in pesewas
           currency: "GHS",
           ref: initData.reference,
@@ -158,7 +158,7 @@ export default function SubscriptionModal({
             plan_name: selectedPlan.name,
             duration_days: selectedPlan.durationDays,
             amount_ghs: selectedPlan.priceGhs,
-            seller_name: sellerName || "Seller",
+            seller_name: sellerName || "VarsMart Seller",
           },
           callback: function (response: { reference: string }) {
             setPaymentStep("prompting");
@@ -171,8 +171,8 @@ export default function SubscriptionModal({
                     reference: response.reference,
                     userId,
                     planId: selectedPlan.id,
-                    sellerName: sellerName || "Seller",
-                    userEmail: userEmail || "seller@uhasmart.com",
+                    sellerName: sellerName || "VarsMart Seller",
+                    userEmail: userEmail || "seller@varsmart.com",
                   }),
                 });
                 const verifyData = await verifyRes.json();
@@ -475,7 +475,7 @@ export default function SubscriptionModal({
                 <h4 className="text-lg font-black text-gray-900">Payment Successful!</h4>
                 <p className="mt-1 text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
                   Your seller account is now fully active until{" "}
-                  <strong className="text-gray-900">{successDate}</strong>. All your listings are live on UHASMART!
+                  <strong className="text-gray-900">{successDate}</strong>. All your listings are live on VarsMart!
                 </p>
               </div>
 

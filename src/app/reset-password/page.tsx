@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import ResetPasswordForm from "@/components/ResetPasswordForm";
 
 export const metadata: Metadata = {
-  title: "Reset Password | UHASMART",
+  title: "Reset Password | VarsMart",
 };
 
 export default function ResetPasswordPage() {

@@ -110,8 +110,8 @@ export default function FeaturedListings() {
     : "0.00";
 
   const modalWhatsAppMessage = isFlyer
-    ? `Hello ${modalSellerName}, I saw your promotional flyer "${selectedProduct?.title}" on UHASMART. I would like to find out more details!`
-    : `Hello ${modalSellerName}, I saw your listing "${selectedProduct?.title}" (GHS ${priceDisplay}) on UHASMART. Is it still available?`;
+    ? `Hello ${modalSellerName}, I saw your promotional flyer "${selectedProduct?.title}" on VarsMart. I would like to find out more details!`
+    : `Hello ${modalSellerName}, I saw your listing "${selectedProduct?.title}" (GHS ${priceDisplay}) on VarsMart. Is it still available?`;
 
   const modalWhatsAppUrl = selectedProduct ? createWhatsAppUrl(modalSellerPhone, modalWhatsAppMessage) : null;
 
@@ -162,7 +162,7 @@ export default function FeaturedListings() {
             <div className="mx-auto flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 shadow-sm">
               <Store className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
-            <h3 className="mt-4 text-base font-bold text-gray-900">Be the first to list on UHASMART</h3>
+            <h3 className="mt-4 text-base font-bold text-gray-900">Be the first to list on VarsMart</h3>
             <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-gray-500">
               Upload up to 20 product pictures at once or post a promotional flyer. Start receiving direct inquiries on WhatsApp!
             </p>
@@ -192,7 +192,7 @@ export default function FeaturedListings() {
             </div>
             <h4 className="mt-3 text-xs sm:text-sm font-bold text-gray-900">Verified Students</h4>
             <p className="mt-1 text-[11px] sm:text-xs text-gray-500 line-clamp-2">
-              Transactions are between verified students attending UHAS Ho campuses.
+              Transactions are between verified students and campus sellers.
             </p>
           </div>
 

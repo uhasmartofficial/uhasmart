@@ -12,7 +12,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/marketplace", label: "Marketplace" },
   { href: "/messages", label: "Messages" },
-  { href: "/seller", label: "Sell on UHASMART" },
+  { href: "/seller", label: "Sell on VarsMart" },
 ];
 
 export default function Navbar() {
@@ -70,7 +70,7 @@ export default function Navbar() {
   return (
     <nav aria-label="Main navigation" className="sticky top-0 z-50 glass-nav">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="group flex items-center" aria-label="UHASMART home">
+        <Link href="/" className="group flex items-center" aria-label="VarsMart home">
           <Logo size="md" />
         </Link>
 

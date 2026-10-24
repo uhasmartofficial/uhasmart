@@ -724,7 +724,7 @@ export default function SellerDashboard() {
                 {subscriptionState.isExpired
                   ? "Reactivate Your Listings with Mobile Money"
                   : subscriptionState.isTrial
-                  ? `Enjoying UHASMART? ${subscriptionState.daysRemaining} days left in your free trial`
+                  ? `Enjoying VarsMart? ${subscriptionState.daysRemaining} days left in your free trial`
                   : `Active ${profile?.subscription_tier || "Seller"} Plan • Ready for student buyers`}
               </h2>
 
@@ -1102,7 +1102,7 @@ export default function SellerDashboard() {
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
               <div>
                 <h3 className="text-base font-black text-gray-900">Create Campus Listing</h3>
-                <p className="text-xs text-gray-500">Reach thousands of UHAS and Ho students.</p>
+                <p className="text-xs text-gray-500">Reach thousands of campus and town buyers.</p>
               </div>
               <button
                 type="button"

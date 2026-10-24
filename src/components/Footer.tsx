@@ -25,7 +25,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 border-t border-gray-100 pt-6 text-center text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} UHASMART. University of Health and Allied Sciences student marketplace.
+          &copy; {new Date().getFullYear()} VarsMart. The trusted campus student marketplace.
         </div>
       </div>
     </footer>

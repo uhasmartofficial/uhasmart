@@ -68,7 +68,7 @@ export default function ResetPasswordForm() {
             <span>🛡️ Security Notification</span>
           </p>
           <p className="text-[11px] leading-relaxed text-blue-800">
-            Your login credentials have been updated securely. If you did not perform this change, please report it immediately to UHASMART security.
+            Your login credentials have been updated securely. If you did not perform this change, please report it immediately to VarsMart security.
           </p>
         </div>
         <Link
@@ -88,7 +88,7 @@ export default function ResetPasswordForm() {
       </div>
       <h1 className="mt-4 text-2xl font-extrabold text-gray-900">Set new password</h1>
       <p className="mt-2 text-sm text-gray-600">
-        Please enter a strong new password for your UHASMART account.
+        Please enter a strong new password for your VarsMart account.
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={handleUpdatePassword}>

@@ -213,8 +213,8 @@ function MarketplaceInner() {
     : "0.00";
 
   const modalWhatsAppMessage = isFlyer
-    ? `Hello ${modalSellerName}, I saw your promotional flyer "${inquireProduct?.title}" on UHASMART. I would like to find out more details!`
-    : `Hello ${modalSellerName}, I saw your listing "${inquireProduct?.title}" (GHS ${priceDisplay}) on UHASMART. Is it still available?`;
+    ? `Hello ${modalSellerName}, I saw your promotional flyer "${inquireProduct?.title}" on VarsMart. I would like to find out more details!`
+    : `Hello ${modalSellerName}, I saw your listing "${inquireProduct?.title}" (GHS ${priceDisplay}) on VarsMart. Is it still available?`;
 
   const modalWhatsAppUrl = inquireProduct ? createWhatsAppUrl(modalSellerPhone, modalWhatsAppMessage) : null;
 
@@ -584,7 +584,7 @@ function MarketplaceInner() {
                 >
                   <span className="flex items-center gap-1.5">
                     <MessageSquare className="h-4 w-4 text-blue-600" />
-                    <span>Send In-App Message on UHASMART</span>
+                    <span>Send In-App Message on VarsMart</span>
                   </span>
                   <ChevronDown
                     className={`h-4 w-4 text-gray-400 transition-transform ${

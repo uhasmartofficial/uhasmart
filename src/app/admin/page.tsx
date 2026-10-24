@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import AdminDashboard from "@/components/AdminDashboard";
 
 export const metadata: Metadata = {
-  title: "Admin & Moderation | UHASMART",
+  title: "Admin & Moderation | VarsMart",
 };
 
 export default function AdminPage() {

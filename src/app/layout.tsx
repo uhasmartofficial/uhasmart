@@ -3,8 +3,8 @@ import MobileDock from "@/components/MobileDock";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UHASMART | University Campus Marketplace (Ho, Ghana)",
-  description: "The trusted student marketplace for University of Health and Allied Sciences (UHAS) in Ho, Ghana. Buy, sell, and discover student products and services.",
+  title: "VarsMart | Campus Student Marketplace",
+  description: "The trusted campus marketplace for students. Buy, sell, and discover student products, hostels, fashion, food, and campus services.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

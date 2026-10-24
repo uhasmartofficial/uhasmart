@@ -100,7 +100,7 @@ export default function AuthForm({ mode, defaultRole = "customer" }: AuthFormPro
   return (
     <section className="w-full max-w-lg rounded-3xl border border-gray-200 bg-white p-7 shadow-sm sm:p-9">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-wider text-blue-600">UHAS Ho Campus</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-blue-600">Campus Community</p>
         {isRegister && (
           <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
             {selectedRole === "seller" ? "Seller Registration" : "Customer Registration"}
@@ -113,12 +113,12 @@ export default function AuthForm({ mode, defaultRole = "customer" }: AuthFormPro
           ? selectedRole === "seller"
             ? "Register your student business"
             : "Create your student account"
-          : "Sign in to UHASMART"}
+          : "Sign in to VarsMart"}
       </h1>
       <p className="mt-2 text-sm text-gray-600">
         {isRegister
           ? selectedRole === "seller"
-            ? "Start listing your campus products or services to reach fellow UHAS students."
+            ? "Start listing your campus products or services to reach fellow campus students."
             : "Sign up to browse, buy, and directly contact verified campus sellers."
           : "Sign in to manage your listings, view chats, and access your account."}
       </p>
@@ -127,7 +127,7 @@ export default function AuthForm({ mode, defaultRole = "customer" }: AuthFormPro
       {isRegister && (
         <div className="mt-6">
           <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
-            I want to use UHASMART to:
+            I want to use VarsMart to:
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -257,7 +257,7 @@ export default function AuthForm({ mode, defaultRole = "customer" }: AuthFormPro
             name="email"
             type="email"
             required
-            placeholder="student@uhas.edu.gh or personal email"
+            placeholder="student or personal email"
             className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
           />
         </div>

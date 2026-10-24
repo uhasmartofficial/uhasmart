@@ -25,7 +25,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     durationDays: 120,
     badge: "Most Popular",
     highlight: true,
-    description: "Covers the whole UHAS academic semester. Save GHS 40!",
+    description: "Covers the whole academic semester. Save GHS 40!",
   },
   {
     id: "annual",

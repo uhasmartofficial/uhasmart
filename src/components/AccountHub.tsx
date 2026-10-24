@@ -486,7 +486,7 @@ export default function AccountHub() {
                   <Sparkles className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-blue-950">Sell on UHASMART</p>
+                  <p className="text-sm font-bold text-blue-950">Sell on VarsMart</p>
                   <p className="text-xs text-blue-700">Register your student brand &amp; post products</p>
                 </div>
               </div>
@@ -742,7 +742,7 @@ export default function AccountHub() {
               <span>Danger Zone</span>
             </h3>
             <p className="mt-1 text-xs text-red-700">
-              Permanently delete your UHASMART account, products, and inquiry data.
+              Permanently delete your VarsMart account, products, and inquiry data.
             </p>
 
             <button

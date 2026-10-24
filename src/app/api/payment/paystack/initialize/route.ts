@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid subscription plan selected." }, { status: 400 });
     }
 
-    const reference = `UHA-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const reference = `VARS-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
     const origin = req.headers.get("origin") || req.nextUrl.origin;
     const siteUrl = origin || process.env.NEXT_PUBLIC_SITE_URL || "https://uhasmart.vercel.app";
     const callbackUrl = `${siteUrl}/seller?payment=success&ref=${reference}`;
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       plan_name: plan.name,
       duration_days: plan.durationDays,
       amount_ghs: plan.priceGhs,
-      seller_name: sellerName || "UHASMART Seller",
+      seller_name: sellerName || "VarsMart Seller",
       custom_fields: [
         { display_name: "Plan Name", variable_name: "plan_name", value: plan.name },
         { display_name: "Seller ID", variable_name: "seller_id", value: userId },

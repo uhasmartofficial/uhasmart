@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import SellerDashboard from "@/components/SellerDashboard";
 
 export const metadata: Metadata = {
-  title: "Seller Portal | UHASMART",
+  title: "Seller Portal | VarsMart",
 };
 
 export default function SellerPage() {

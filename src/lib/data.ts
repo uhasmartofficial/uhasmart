@@ -35,7 +35,7 @@ export const campusLocations: CampusLocation[] = [
   { id: "kpodzi", name: "Kpodzi" },
   { id: "htu-poly", name: "HTU / Poly Area" },
   { id: "barracks-airport", name: "Barracks / Airport Area" },
-  { id: "sokode", name: "Sokode / UHAS Main Campus" },
+  { id: "sokode", name: "Sokode / Main Campus Area" },
   { id: "trafalgar", name: "Trafalgar / Ho Teaching Hospital" },
   { id: "dave", name: "Dave Campus & Surroundings" },
   { id: "lokoe", name: "Lokoe" },

@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import ForgotPasswordForm from "@/components/ForgotPasswordForm";
 
 export const metadata: Metadata = {
-  title: "Forgot Password | UHASMART",
+  title: "Forgot Password | VarsMart",
 };
 
 export default function ForgotPasswordPage() {

@@ -84,13 +84,14 @@ export default function Logo({
             strokeLinejoin="round"
           />
 
-          {/* Central Bold 'U' Monogram (for UHAS) */}
+          {/* Central Bold 'V' Monogram (for VarsMart) */}
           <path
-            d="M40 48 L40 61 C40 67 44.5 71.5 50 71.5 C55.5 71.5 60 67 60 61 L60 48"
+            d="M39 48 L50 69 L61 48"
             fill="none"
             stroke="#FFFFFF"
             strokeWidth="5.5"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
 
           {/* Energetic 4-Point Sparkle Star (Top-Right) */}
@@ -106,10 +107,10 @@ export default function Logo({
         <div className="flex flex-col leading-none">
           <div className="flex items-center tracking-tight font-black">
             <span className={theme === "dark" ? "text-white" : "text-slate-900" + " " + titleSize}>
-              UHA
+              Vars
             </span>
             <span className={`bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent ${titleSize}`}>
-              SMART
+              Mart
             </span>
             <span className="ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-cyan-500" />
           </div>

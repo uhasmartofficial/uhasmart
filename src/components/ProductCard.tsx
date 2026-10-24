@@ -56,8 +56,8 @@ export default function ProductCard({ product, onInquire }: ProductCardProps) {
     : Number(product.price_ghs).toFixed(2);
 
   const whatsAppMessage = isFlyer
-    ? `Hello ${sellerName}, I saw your promotional flyer "${product.title}" on UHASMART. I would like to find out more details!`
-    : `Hello ${sellerName}, I saw your product "${product.title}" (GHS ${priceDisplay}) on UHASMART. Is it still available?`;
+    ? `Hello ${sellerName}, I saw your promotional flyer "${product.title}" on VarsMart. I would like to find out more details!`
+    : `Hello ${sellerName}, I saw your product "${product.title}" (GHS ${priceDisplay}) on VarsMart. Is it still available?`;
 
   const whatsAppUrl = createWhatsAppUrl(sellerPhone, whatsAppMessage);
 
