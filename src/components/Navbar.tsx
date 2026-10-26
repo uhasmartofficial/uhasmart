@@ -21,10 +21,9 @@ import { useTheme } from "@/lib/useTheme";
 import Logo from "@/components/Logo";
 
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/marketplace", label: "Marketplace" },
-  { href: "/messages", label: "Messages" },
+  { href: "/", label: "Marketplace" },
   { href: "/seller", label: "Sell on VarsMart" },
+  { href: "/messages", label: "Messages" },
 ];
 
 export default function Navbar() {
