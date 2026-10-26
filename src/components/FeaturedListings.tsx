@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import ProductCard, { ProductItem } from "@/components/ProductCard";
+import ProductSkeletonCard from "@/components/ProductSkeletonCard";
 import {
   ArrowRight,
   Store,
@@ -140,7 +141,7 @@ export default function FeaturedListings() {
         {loading ? (
           <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="aspect-square rounded-2xl bg-gray-50 animate-pulse border border-gray-100" />
+              <ProductSkeletonCard key={n} />
             ))}
           </div>
         ) : activeListings.length > 0 ? (

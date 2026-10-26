@@ -6,9 +6,12 @@ import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard, { ProductItem } from "@/components/ProductCard";
+import ProductSkeletonCard from "@/components/ProductSkeletonCard";
+import SafetyBanner from "@/components/SafetyBanner";
 import { categories, campusLocations, getCategoryIcon } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 import { getListingImageUrl } from "@/lib/storage";
+import { useWishlist } from "@/lib/useWishlist";
 import {
   Search,
   MapPin,
@@ -24,6 +27,7 @@ import {
   ShieldCheck,
   Images,
   FileText,
+  Heart,
 } from "lucide-react";
 import { createWhatsAppUrl } from "@/lib/whatsapp";
 
@@ -38,12 +42,33 @@ function MarketplaceInner() {
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "price-low" | "price-high">("newest");
+  const [onlySaved, setOnlySaved] = useState(false);
 
-  // Sync category from URL search params (e.g., from Homepage category links)
+  const { wishlist, wishlistCount } = useWishlist();
+
+  // Sync category, search query, location & saved filter from URL search params
   useEffect(() => {
     const cat = searchParams.get("category");
     if (cat) {
       setSelectedCategory(cat);
+    }
+    const q = searchParams.get("query");
+    if (q) {
+      setSearchQuery(q);
+    }
+    const loc = searchParams.get("location");
+    if (loc) {
+      // Find matching location name or ID
+      const matched = campusLocations.find((l) => l.id === loc || l.name === loc);
+      if (matched) {
+        setSelectedLocation(matched.name);
+      } else {
+        setSelectedLocation(loc);
+      }
+    }
+    const filter = searchParams.get("filter");
+    if (filter === "saved") {
+      setOnlySaved(true);
     }
   }, [searchParams]);
 
@@ -115,6 +140,9 @@ function MarketplaceInner() {
         // Hide if seller's subscription has expired
         if (!isSellerActive(item)) return false;
 
+        // Filter by wishlist if onlySaved is active
+        if (onlySaved && !wishlist.includes(item.id)) return false;
+
         const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
         const matchesLocation = selectedLocation === "all" || item.location === selectedLocation;
         const matchesSearch =
@@ -129,7 +157,7 @@ function MarketplaceInner() {
         if (sortBy === "price-high") return Number(b.price_ghs) - Number(a.price_ghs);
         return 0;
       });
-  }, [listings, selectedCategory, selectedLocation, searchQuery, sortBy]);
+  }, [listings, selectedCategory, selectedLocation, searchQuery, sortBy, onlySaved, wishlist]);
 
   async function handleSendInquiry(e: React.FormEvent) {
     e.preventDefault();
@@ -227,44 +255,49 @@ function MarketplaceInner() {
   }, [listings, inquireProduct]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950 transition-colors">
       <Navbar />
 
       <main className="flex-1 py-6 sm:py-10">
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           {/* Header */}
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Ho Marketplace</span>
-            <h1 className="mt-1 text-2xl font-black text-gray-900 sm:text-3xl">Campus &amp; Town Marketplace</h1>
-            <p className="mt-1 text-xs text-gray-500">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Ho Marketplace</span>
+            <h1 className="mt-1 text-2xl font-black text-gray-900 dark:text-white sm:text-3xl">Campus &amp; Town Marketplace</h1>
+            <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
               Hostels, salons, groceries, gadgets, thrift fashion, promotional flyers &amp; services in Ho.
             </p>
           </div>
 
+          {/* Safety Notice Banner */}
+          <div className="mt-3 -mx-3 sm:mx-0">
+            <SafetyBanner />
+          </div>
+
           {/* Search & Filter Bar (iPhone Frosted Glass) */}
-          <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 rounded-3xl glass-card p-2.5 sm:p-3.5 shadow-sm">
+          <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 rounded-3xl glass-card p-2.5 sm:p-3.5 shadow-sm">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400 dark:text-slate-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search hostels, barbers, groceries, gadgets, flyers..."
-                className="w-full rounded-2xl border border-gray-200/80 bg-white/70 py-2.5 pl-10 pr-4 text-xs font-medium text-gray-900 focus:border-blue-600 focus:bg-white focus:outline-none"
+                className="w-full rounded-2xl border border-gray-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 py-2.5 pl-10 pr-4 text-xs font-medium text-gray-900 dark:text-white focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 focus:outline-none"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:flex-initial">
-                <MapPin className="absolute left-3 top-3 h-3.5 w-3.5 text-gray-400" />
+                <MapPin className="absolute left-3 top-3 h-3.5 w-3.5 text-gray-400 dark:text-slate-500" />
                 <select
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full sm:w-auto rounded-2xl border border-gray-200/80 bg-white/70 py-2.5 pl-8 pr-3 text-xs font-medium text-gray-900 focus:border-blue-600 focus:outline-none"
+                  className="w-full sm:w-auto rounded-2xl border border-gray-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 py-2.5 pl-8 pr-3 text-xs font-medium text-gray-900 dark:text-white focus:border-blue-600 focus:outline-none"
                 >
-                  <option value="all">All Ho Locations</option>
+                  <option value="all" className="dark:bg-slate-900">All Ho Locations</option>
                   {campusLocations.map((loc) => (
-                    <option key={loc.id} value={loc.name}>
+                    <option key={loc.id} value={loc.name} className="dark:bg-slate-900">
                       {loc.name}
                     </option>
                   ))}
@@ -274,11 +307,11 @@ function MarketplaceInner() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="flex-1 sm:flex-initial rounded-2xl border border-gray-200/80 bg-white/70 px-3 py-2.5 text-xs font-medium text-gray-900 focus:border-blue-600 focus:outline-none"
+                className="flex-1 sm:flex-initial rounded-2xl border border-gray-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 px-3 py-2.5 text-xs font-medium text-gray-900 dark:text-white focus:border-blue-600 focus:outline-none"
               >
-                <option value="newest">Newest first</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
+                <option value="newest" className="dark:bg-slate-900">Newest first</option>
+                <option value="price-low" className="dark:bg-slate-900">Price: Low to High</option>
+                <option value="price-high" className="dark:bg-slate-900">Price: High to Low</option>
               </select>
             </div>
           </div>
@@ -287,26 +320,56 @@ function MarketplaceInner() {
           <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
             <button
               type="button"
-              onClick={() => setSelectedCategory("all")}
+              onClick={() => {
+                setSelectedCategory("all");
+                setOnlySaved(false);
+              }}
               className={`rounded-2xl px-4 py-2 text-xs font-bold transition-all whitespace-nowrap active:scale-95 ${
-                selectedCategory === "all"
+                selectedCategory === "all" && !onlySaved
                   ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-                  : "glass-pill text-gray-700 hover:bg-white"
+                  : "glass-pill text-gray-700 dark:text-slate-300 hover:bg-white"
               }`}
             >
               All Categories
             </button>
+
+            {/* Wishlist / Saved Items Toggle Pill */}
+            <button
+              type="button"
+              onClick={() => setOnlySaved((prev) => !prev)}
+              className={`rounded-2xl px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 active:scale-95 ${
+                onlySaved
+                  ? "bg-rose-500 text-white shadow-md shadow-rose-500/25"
+                  : "glass-pill text-gray-700 dark:text-slate-300 hover:text-rose-500 hover:bg-white"
+              }`}
+            >
+              <Heart className={`h-3.5 w-3.5 ${onlySaved ? "fill-white" : "text-rose-500"}`} />
+              <span>Saved Items</span>
+              {wishlistCount > 0 && (
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[9px] font-black ${
+                    onlySaved ? "bg-white text-rose-600" : "bg-rose-500 text-white"
+                  }`}
+                >
+                  {wishlistCount}
+                </span>
+              )}
+            </button>
+
             {categories.map((c) => {
               const Icon = c.icon;
               return (
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => setSelectedCategory(c.id)}
+                  onClick={() => {
+                    setSelectedCategory(c.id);
+                    setOnlySaved(false);
+                  }}
                   className={`rounded-2xl px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 active:scale-95 ${
-                    selectedCategory === c.id
+                    selectedCategory === c.id && !onlySaved
                       ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-                      : "glass-pill text-gray-700 hover:bg-white"
+                      : "glass-pill text-gray-700 dark:text-slate-300 hover:bg-white"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -319,17 +382,37 @@ function MarketplaceInner() {
           {/* Product Grid - 2 COLUMNS ON MOBILE, 3-4 ON DESKTOP */}
           <div className="mt-6">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-24">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                <p className="mt-3 text-xs font-semibold text-gray-500">Loading marketplace items...</p>
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                  <ProductSkeletonCard key={n} />
+                ))}
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-12 text-center">
-                <Package className="mx-auto h-12 w-12 text-gray-300" />
-                <h3 className="mt-3 text-base font-bold text-gray-900">No active products or flyers found</h3>
-                <p className="mt-1 text-xs text-gray-500">
-                  Try adjusting your search query or location filter, or be the first seller to list here!
-                </p>
+              <div className="rounded-3xl border border-dashed border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-12 text-center">
+                {onlySaved ? (
+                  <>
+                    <Heart className="mx-auto h-12 w-12 text-rose-300 dark:text-rose-500/50" />
+                    <h3 className="mt-3 text-base font-bold text-gray-900 dark:text-white">No saved items yet</h3>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-slate-400 max-w-sm mx-auto">
+                      Click the heart icon on any product or hostel listing to save it here for easy reference!
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setOnlySaved(false)}
+                      className="mt-4 inline-flex items-center gap-1.5 rounded-2xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
+                    >
+                      Browse all marketplace items
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Package className="mx-auto h-12 w-12 text-gray-300 dark:text-slate-600" />
+                    <h3 className="mt-3 text-base font-bold text-gray-900 dark:text-white">No active products or flyers found</h3>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                      Try adjusting your search query or location filter, or be the first seller to list here!
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
