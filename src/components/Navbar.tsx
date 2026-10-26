@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, UserRound, X, ShieldCheck } from "lucide-react";
+import { Menu, UserRound, X, ShieldCheck, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUnreadMessages } from "@/lib/useUnreadMessages";
 import Logo from "@/components/Logo";
@@ -108,6 +108,16 @@ export default function Navbar() {
               Admin
             </Link>
           )}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("varsmart:install-prompt"))}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3 py-2 text-xs font-bold text-blue-700 shadow-sm hover:bg-blue-100/80 active:scale-95 transition-all"
+            title="Download VarsMart App to your device"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>Install App</span>
+          </button>
+
           <Link
             href={isLoggedIn ? "/account" : "/login"}
             className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition-colors ${
@@ -184,6 +194,20 @@ export default function Navbar() {
           >
             {isLoggedIn ? "My Account" : "Sign In"}
           </Link>
+
+          <div className="pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                window.dispatchEvent(new CustomEvent("varsmart:install-prompt"));
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-3.5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 active:scale-95 transition-all"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download VarsMart App</span>
+            </button>
+          </div>
         </div>
       )}
     </nav>

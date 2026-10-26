@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Download } from "lucide-react";
 import Logo from "@/components/Logo";
 
 export default function Footer() {
@@ -11,11 +13,19 @@ export default function Footer() {
             <Logo size="sm" />
           </Link>
 
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
             <Link href="/" className="hover:text-blue-600">Home</Link>
             <Link href="/marketplace" className="hover:text-blue-600">Marketplace</Link>
             <Link href="/register-business" className="hover:text-blue-600">Register Business</Link>
             <Link href="/login" className="hover:text-blue-600">My Account</Link>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("varsmart:install-prompt"))}
+              className="inline-flex items-center gap-1.5 font-bold text-blue-600 hover:text-blue-700 hover:underline"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download App</span>
+            </button>
           </div>
 
           <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">

@@ -1,17 +1,28 @@
 import type { Metadata, Viewport } from "next";
 import MobileDock from "@/components/MobileDock";
+import PwaRegister from "@/components/PwaRegister";
+import InstallAppBanner from "@/components/InstallAppBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "VarsMart | Campus Student Marketplace",
   description: "The trusted campus marketplace for students. Buy, sell, and discover student products, hostels, fashion, food, and campus services.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "VarsMart",
+  },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/favicon.ico" },
     ],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    shortcut: "/icon-192.png",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
@@ -43,6 +54,10 @@ export default function RootLayout({
 
         {/* Floating iOS Frosted Glass Mobile Dock */}
         <MobileDock />
+
+        {/* PWA Service Worker & Install Prompt Banner */}
+        <PwaRegister />
+        <InstallAppBanner />
       </body>
     </html>
   );
