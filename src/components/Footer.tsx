@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { ShieldCheck, Download } from "lucide-react";
 import Logo from "@/components/Logo";
+import { usePwaInstall } from "@/lib/usePwaInstall";
 
 export default function Footer() {
+  const { isMounted, isInstalled, isStandalone, device } = usePwaInstall();
+  const showInstallButton = isMounted && !isInstalled && !isStandalone;
+
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -18,14 +22,17 @@ export default function Footer() {
             <Link href="/marketplace" className="hover:text-blue-600">Marketplace</Link>
             <Link href="/register-business" className="hover:text-blue-600">Register Business</Link>
             <Link href="/login" className="hover:text-blue-600">My Account</Link>
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent("varsmart:install-prompt"))}
-              className="inline-flex items-center gap-1.5 font-bold text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Download App</span>
-            </button>
+            {showInstallButton && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("varsmart:install-prompt"))}
+                className="inline-flex items-center gap-1.5 font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                title={device.title}
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>{device.installActionLabel}</span>
+              </button>
+            )}
           </div>
 
           <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
