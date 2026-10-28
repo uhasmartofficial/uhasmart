@@ -19,6 +19,7 @@ import {
   X,
   CheckCircle2,
   Phone,
+  PhoneCall,
   MessageSquare,
   Store,
   ChevronDown,
@@ -30,7 +31,7 @@ import {
   Home,
   SlidersHorizontal,
 } from "lucide-react";
-import { createWhatsAppUrl } from "@/lib/whatsapp";
+import { createWhatsAppUrl, createCallUrl, parseSellerPhones } from "@/lib/whatsapp";
 
 export default function MarketplaceView() {
   const supabase = createClient();
@@ -212,8 +213,13 @@ export default function MarketplaceView() {
     inquireProduct?.profiles?.business_name ||
     inquireProduct?.profiles?.display_name ||
     "Campus Vendor";
-  const modalSellerPhone =
-    inquireProduct?.contact_phone || inquireProduct?.profiles?.phone_number;
+
+  const sellerPhones = useMemo(() => {
+    return parseSellerPhones(
+      inquireProduct?.contact_phone,
+      inquireProduct?.profiles?.phone_number
+    );
+  }, [inquireProduct]);
 
   const galleryPhotos =
     inquireProduct?.gallery_images && inquireProduct.gallery_images.length > 0
@@ -246,8 +252,12 @@ export default function MarketplaceView() {
     ? `Hello ${modalSellerName}, I saw your promotional flyer "${inquireProduct?.title}" on VarsMart. I would like to find out more details!`
     : `Hello ${modalSellerName}, I saw your listing "${inquireProduct?.title}" (GHS ${priceDisplay}) on VarsMart. Is it still available?`;
 
-  const modalWhatsAppUrl = inquireProduct
-    ? createWhatsAppUrl(modalSellerPhone, modalWhatsAppMessage)
+  const modalWhatsAppUrl = inquireProduct && sellerPhones.whatsappPhone
+    ? createWhatsAppUrl(sellerPhones.whatsappPhone, modalWhatsAppMessage)
+    : null;
+
+  const modalCallUrl = inquireProduct && sellerPhones.callPhone
+    ? createCallUrl(sellerPhones.callPhone)
     : null;
 
   const moreSellerItems = useMemo(() => {
@@ -664,6 +674,24 @@ export default function MarketplaceView() {
                     </p>
                   </div>
                 </div>
+
+                {/* Seller Direct Numbers */}
+                {(sellerPhones.displayWhatsapp || sellerPhones.displayCall) && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+                    {sellerPhones.displayWhatsapp && (
+                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                        <Phone className="h-3 w-3" />
+                        <span>WA: {sellerPhones.displayWhatsapp}</span>
+                      </span>
+                    )}
+                    {sellerPhones.displayCall && (
+                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:text-blue-300">
+                        <PhoneCall className="h-3 w-3" />
+                        <span>Call: {sellerPhones.displayCall}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* More From This Seller */}
@@ -708,27 +736,40 @@ export default function MarketplaceView() {
                 </div>
               )}
 
-              {/* Primary Direct WhatsApp CTA */}
-              {modalWhatsAppUrl ? (
+              {/* Primary Direct CTAs: WhatsApp & Direct Normal Phone Call */}
+              {modalWhatsAppUrl || modalCallUrl ? (
                 <div className="space-y-2 pt-2">
-                  <a
-                    href={modalWhatsAppUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 active:scale-98 transition-all"
-                  >
-                    <Phone className="h-5 w-5" />
-                    <span>
-                      {isFlyer ? "Inquire on WhatsApp Directly" : "Chat with Seller on WhatsApp"}
-                    </span>
-                  </a>
+                  <div className={`grid ${modalWhatsAppUrl && modalCallUrl ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"} gap-2`}>
+                    {modalWhatsAppUrl && (
+                      <a
+                        href={modalWhatsAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 active:scale-98 transition-all"
+                      >
+                        <Phone className="h-4 w-4" />
+                        <span>
+                          {isFlyer ? "Inquire on WhatsApp" : "Chat on WhatsApp"}
+                        </span>
+                      </a>
+                    )}
+                    {modalCallUrl && (
+                      <a
+                        href={modalCallUrl}
+                        className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 active:scale-98 transition-all"
+                      >
+                        <PhoneCall className="h-4 w-4" />
+                        <span>Call Normal Phone</span>
+                      </a>
+                    )}
+                  </div>
                   <p className="text-center text-[11px] text-gray-400">
-                    Instant contact for fastest delivery or inspection on campus
+                    Can&apos;t reach the seller on WhatsApp? Tap &quot;Call Normal Phone&quot; to ring them directly.
                   </p>
                 </div>
               ) : (
                 <div className="rounded-xl bg-amber-50 dark:bg-amber-950/60 p-3 text-center text-xs text-amber-800 dark:text-amber-300">
-                  Seller has not attached a public WhatsApp line. Please use in-app messaging below.
+                  Seller has not attached a public contact line. Please use in-app messaging below.
                 </div>
               )}
 

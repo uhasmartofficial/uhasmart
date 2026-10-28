@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   MapPin,
   Phone,
+  PhoneCall,
   MessageSquare,
   Store,
   FileText,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { categories, getCategoryIcon } from "@/lib/data";
 import { getListingImageUrl } from "@/lib/storage";
-import { createWhatsAppUrl } from "@/lib/whatsapp";
+import { parseSellerPhones, createWhatsAppUrl, createCallUrl } from "@/lib/whatsapp";
 import { useWishlist } from "@/lib/useWishlist";
 
 export interface ProductItem {
@@ -53,7 +54,6 @@ export default function ProductCard({ product, onInquire }: ProductCardProps) {
   const categoryObj = categories.find((c) => c.id === product.category);
   const CategoryIcon = getCategoryIcon(product.category);
   const sellerName = product.profiles?.business_name || product.profiles?.display_name || "Vendor";
-  const sellerPhone = product.contact_phone || product.profiles?.phone_number;
   const [imageError, setImageError] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [copiedShare, setCopiedShare] = useState(false);
@@ -83,7 +83,9 @@ export default function ProductCard({ product, onInquire }: ProductCardProps) {
     ? `Hello ${sellerName}, I saw your promotional flyer "${product.title}" on VarsMart. I would like to find out more details!`
     : `Hello ${sellerName}, I saw your product "${product.title}" (GHS ${priceDisplay}) on VarsMart. Is it still available?`;
 
-  const whatsAppUrl = createWhatsAppUrl(sellerPhone, whatsAppMessage);
+  const phones = parseSellerPhones(product.contact_phone, product.profiles?.phone_number);
+  const whatsAppUrl = createWhatsAppUrl(phones.whatsappPhone, whatsAppMessage);
+  const callUrl = createCallUrl(phones.callPhone);
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -279,18 +281,31 @@ export default function ProductCard({ product, onInquire }: ProductCardProps) {
 
       {/* Action Buttons Row */}
       <div className="mt-3 flex items-center gap-1.5 sm:gap-2 border-t border-gray-100 dark:border-slate-800 pt-2.5 sm:pt-3">
-        {whatsAppUrl ? (
+        {whatsAppUrl && (
           <a
             href={whatsAppUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl sm:rounded-2xl bg-emerald-600 px-2 sm:px-3 py-2 text-[10px] sm:text-xs font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
+            title="Chat directly on WhatsApp"
           >
             <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
             <span className="truncate">WhatsApp</span>
           </a>
-        ) : null}
+        )}
+
+        {callUrl && (
+          <a
+            href={callUrl}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center gap-1 rounded-xl sm:rounded-2xl bg-blue-600 px-2.5 sm:px-3.5 py-2 text-[10px] sm:text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-95 transition-all"
+            title={`Call normal phone line: ${phones.displayCall || phones.callPhone}`}
+          >
+            <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+            <span>Call</span>
+          </a>
+        )}
 
         <button
           type="button"
@@ -299,11 +314,11 @@ export default function ProductCard({ product, onInquire }: ProductCardProps) {
             onInquire?.(product);
           }}
           className={`${
-            whatsAppUrl ? "flex-1" : "w-full"
-          } inline-flex items-center justify-center gap-1 rounded-xl sm:rounded-2xl bg-blue-600 px-2 sm:px-3 py-2 text-[10px] sm:text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-95 transition-all`}
+            !whatsAppUrl && !callUrl ? "w-full" : ""
+          } inline-flex items-center justify-center rounded-xl sm:rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all`}
+          title="View product details & in-app message"
         >
-          <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
-          <span className="truncate">Inquire</span>
+          <MessageSquare className="h-3.5 w-3.5 shrink-0 text-gray-600 dark:text-slate-300" />
         </button>
       </div>
     </div>

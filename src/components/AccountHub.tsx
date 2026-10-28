@@ -21,6 +21,7 @@ import {
   KeyRound,
   Building,
   Phone,
+  PhoneCall,
   MapPin,
   CheckCircle2,
   AlertCircle,
@@ -30,6 +31,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { parseSellerPhones } from "@/lib/whatsapp";
 
 interface ProfileData {
   display_name: string;
@@ -60,6 +62,8 @@ export default function AccountHub() {
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editBusinessName, setEditBusinessName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editCallPhone, setEditCallPhone] = useState("");
+  const [useSamePhoneForCall, setUseSamePhoneForCall] = useState(true);
   const [editLocation, setEditLocation] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
@@ -153,7 +157,10 @@ export default function AccountHub() {
           setProfile(p);
           setEditDisplayName(p.display_name || "");
           setEditBusinessName(p.business_name || "");
-          setEditPhone(p.phone_number || "");
+          const parsedPhones = parseSellerPhones(p.phone_number);
+          setEditPhone(parsedPhones.whatsappPhone || "");
+          setEditCallPhone(parsedPhones.callPhone !== parsedPhones.whatsappPhone ? parsedPhones.callPhone || "" : "");
+          setUseSamePhoneForCall(parsedPhones.callPhone === parsedPhones.whatsappPhone || !parsedPhones.callPhone);
           setEditLocation(p.campus_location || campusLocations[0].name);
         } else {
           const defaultName =
@@ -171,7 +178,10 @@ export default function AccountHub() {
           setProfile(p);
           setEditDisplayName(defaultName);
           setEditBusinessName(p.business_name || "");
-          setEditPhone(p.phone_number || "");
+          const metaParsed = parseSellerPhones(p.phone_number);
+          setEditPhone(metaParsed.whatsappPhone || "");
+          setEditCallPhone(metaParsed.callPhone !== metaParsed.whatsappPhone ? metaParsed.callPhone || "" : "");
+          setUseSamePhoneForCall(metaParsed.callPhone === metaParsed.whatsappPhone || !metaParsed.callPhone);
           setEditLocation(p.campus_location || campusLocations[0].name);
 
           // If row missing from profiles, self-heal via RPC
@@ -213,10 +223,17 @@ export default function AccountHub() {
     setProfileSuccess("");
 
     try {
+      const primaryWA = editPhone.trim();
+      const normalCall = !useSamePhoneForCall && editCallPhone.trim() ? editCallPhone.trim() : "";
+      const finalPhoneNumber =
+        normalCall && normalCall !== primaryWA
+          ? `${primaryWA} | ${normalCall}`
+          : primaryWA;
+
       const updates: Partial<ProfileData> = {
         display_name: editDisplayName.trim(),
         campus_location: editLocation.trim() || null,
-        phone_number: editPhone.trim() || null,
+        phone_number: finalPhoneNumber || null,
       };
 
       if (profile?.role === "seller") {
@@ -617,10 +634,10 @@ export default function AccountHub() {
 
           <div>
             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-600">
-              WhatsApp / Phone Number
+              WhatsApp Line
             </label>
             <div className="relative">
-              <Phone className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+              <Phone className="absolute left-3.5 top-3 h-4 w-4 text-emerald-600" />
               <input
                 type="tel"
                 placeholder="e.g. 024 123 4567"
@@ -630,9 +647,45 @@ export default function AccountHub() {
               />
             </div>
             <p className="mt-1 text-[11px] text-gray-400">
-              Used so students can message you for fast campus deliveries.
+              Used so students can message you on WhatsApp for orders.
             </p>
           </div>
+
+          {isSeller && (
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                  <PhoneCall className="h-3.5 w-3.5 text-blue-600" />
+                  <span>Normal Phone Call Line</span>
+                </label>
+                <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={useSamePhoneForCall}
+                    onChange={(e) => setUseSamePhoneForCall(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>Same as WhatsApp</span>
+                </label>
+              </div>
+
+              {!useSamePhoneForCall && (
+                <div className="mt-2 relative animate-in fade-in duration-200">
+                  <PhoneCall className="absolute left-3.5 top-2.5 h-4 w-4 text-blue-600" />
+                  <input
+                    type="tel"
+                    value={editCallPhone}
+                    onChange={(e) => setEditCallPhone(e.target.value)}
+                    placeholder="e.g. 020 987 6543 (direct phone call)"
+                    className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2 text-xs text-gray-900 focus:border-blue-600 focus:outline-none"
+                  />
+                </div>
+              )}
+              <p className="text-[10px] text-gray-500 leading-tight">
+                In case a buyer has no internet or WhatsApp data, they can tap <strong>Call</strong> to reach this regular SIM number directly.
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-600">

@@ -26,6 +26,8 @@ import {
   Images,
   Zap,
   Phone,
+  PhoneCall,
+  MessageCircle,
   Plus,
 } from "lucide-react";
 
@@ -88,6 +90,8 @@ export default function SellerDashboard() {
   const [location, setLocation] = useState(campusLocations[0].name);
   const [description, setDescription] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [callPhone, setCallPhone] = useState("");
+  const [useSamePhoneForCall, setUseSamePhoneForCall] = useState(true);
 
   // OPTION 1: UPLOAD PRODUCTS (Up to 20 pictures)
   const [productDrafts, setProductDrafts] = useState<ProductItemDraft[]>([]);
@@ -423,6 +427,14 @@ export default function SellerDashboard() {
     setSuccess("");
 
     try {
+      // Calculate consolidated contact phone (WhatsApp & optional separate normal calling line)
+      const primaryWhatsApp = contactPhone.trim() || profile?.phone_number || "";
+      const normalVoiceCall = !useSamePhoneForCall && callPhone.trim() ? callPhone.trim() : "";
+      const finalContactPhone =
+        normalVoiceCall && normalVoiceCall !== primaryWhatsApp
+          ? `${primaryWhatsApp} | ${normalVoiceCall}`
+          : primaryWhatsApp;
+
       // -------------------------------------------------------------
       // SUBMIT FLOW A: POST A PROMOTIONAL FLYER
       // -------------------------------------------------------------
@@ -460,7 +472,7 @@ export default function SellerDashboard() {
             price_type: flyerPriceType,
             listing_type: "flyer",
             location,
-            contact_phone: contactPhone.trim() || profile.phone_number,
+            contact_phone: finalContactPhone,
             image_path: flyerStoragePath,
             gallery_images: [flyerStoragePath],
             status: "pending",
@@ -529,7 +541,7 @@ export default function SellerDashboard() {
             price_type: priceType,
             listing_type: "product",
             location,
-            contact_phone: contactPhone.trim() || profile.phone_number,
+            contact_phone: finalContactPhone,
             image_path: uploadedPaths[0],
             gallery_images: uploadedPaths,
             status: "pending",
@@ -557,7 +569,7 @@ export default function SellerDashboard() {
             price_type: priceType,
             listing_type: "product",
             location,
-            contact_phone: contactPhone.trim() || profile.phone_number,
+            contact_phone: finalContactPhone,
             image_path: uploadedPaths[idx],
             gallery_images: uploadedPaths, // each item retains the batch gallery
             status: "pending",
@@ -1544,22 +1556,64 @@ export default function SellerDashboard() {
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-700">
-                  Seller WhatsApp / Phone Number <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-3.5 h-4 w-4 text-gray-400" />
-                  <input
-                    type="tel"
-                    required
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="e.g. 0241234567"
-                    className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-xs font-medium text-gray-900 focus:border-blue-600 focus:outline-none"
-                  />
+              <div className="space-y-3">
+                {/* WhatsApp Number Field */}
+                <div>
+                  <label className="mb-1 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-700">
+                    <span>Seller WhatsApp Line <span className="text-red-500">*</span></span>
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                      <MessageCircle className="h-3 w-3" /> WhatsApp Chats
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-3.5 h-4 w-4 text-emerald-600" />
+                    <input
+                      type="tel"
+                      required
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="e.g. 0241234567"
+                      className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-xs font-medium text-gray-900 focus:border-blue-600 focus:outline-none"
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-gray-400">Buyers tap WhatsApp to message you about this product directly.</p>
                 </div>
-                <p className="mt-1 text-[10px] text-gray-400">Buyers will contact you directly on WhatsApp at this number.</p>
+
+                {/* Normal Voice Call Line */}
+                <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                      <PhoneCall className="h-3.5 w-3.5 text-blue-600" />
+                      <span>Regular Phone Line (Direct Voice Calls)</span>
+                    </label>
+                    <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={useSamePhoneForCall}
+                        onChange={(e) => setUseSamePhoneForCall(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>Same as WhatsApp</span>
+                    </label>
+                  </div>
+
+                  {!useSamePhoneForCall && (
+                    <div className="mt-2.5 relative animate-in fade-in duration-200">
+                      <PhoneCall className="absolute left-3.5 top-3.5 h-4 w-4 text-blue-600" />
+                      <input
+                        type="tel"
+                        value={callPhone}
+                        onChange={(e) => setCallPhone(e.target.value)}
+                        placeholder="e.g. 0209876543 (in case customer cannot reach WhatsApp)"
+                        className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-xs font-medium text-gray-900 focus:border-blue-600 focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  <p className="mt-1.5 text-[10px] text-gray-500 leading-tight">
+                    In case a buyer has no internet data or cannot reach you on WhatsApp, they can tap <strong>Call</strong> to dial this normal phone line directly.
+                  </p>
+                </div>
               </div>
 
               <div>
